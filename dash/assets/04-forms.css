@@ -1,0 +1,34 @@
+
+/*
+ * FORM CONTROLS
+ *
+*/
+
+.Select-control, 
+.Select.is-focused .Select-control,
+.Select.is-open .Select-control
+{
+    border-radius: 2px;
+    background-color: var(--bg-color);
+    border-color: var(--color-darkGrey);
+    color: var(--font-color)
+}
+
+.Select-value-label {
+    color: var(--font-color) !important;
+
+
+}
+
+.Select-input 
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="color"]):not([type="button"]):not([type="reset"])
+ {
+    border-color: var(--color-darkGrey);
+
+}
+
+.Select-menu-outer {
+    background-color: var(--bg-secondary-color);
+    border-color: var(--color-darkGrey);
+
+}

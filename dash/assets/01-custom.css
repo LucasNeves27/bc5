@@ -1,0 +1,112 @@
+
+:root {
+    --bg-color: #27293d;
+    --bg-secondary-color: #1e1e2f;
+    --color-darkest: #171723;
+    --color-primary: #00BBE0;
+    --color-accent: #f10075;
+    --color-lightGrey: #d2d6dd;
+    --color-grey: #747681;
+    --color-darkGrey: #353a53;
+    --color-error: #FF3041;
+    --color-warning: #FFCD3F;
+    --color-success: #3bb001;
+    --grid-maxWidth: 120rem;
+    --grid-gutter: 2rem;
+    --font-size: 1.6rem;
+    --font-color: #c2c2d2;
+
+    --color1: #363537;
+    --color2: #e9f6f6;
+    --color3: #bee9e8;
+    --color4: #62b6cb;
+    --color5: #3f8098;
+    --color6: #1b4965;
+    --color7: #ffef84;
+    --color8: #c3d37a;
+    --color9: #86b66f;
+    --color10: #3bb001;
+
+    --font-bold: 'JetBrains Mono', sans-serif;
+    --font-regular: 'Roboto', sans-serif;
+
+}
+
+body {
+    background-color: var(--bg-secondary-color);
+    font-family: var(--font-regular)
+}
+
+h1 {
+    font-size: 2em;
+}
+h2 {
+    font-size: 1.6em;
+}
+h3 {
+    font-size: 1.4em;
+}
+h4 {
+    font-size: 1.2em;
+}
+h5 {
+    font-size: 1.1em;
+}
+h6 {
+    font-size: 1em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-bold);
+}
+.outer {
+    
+
+}
+.card {
+    margin: .5em 0;
+    border: 1px solid var(--color-darkGrey);
+    box-shadow: none;
+}
+
+nav.nav.main-nav .brand{
+    font-family: var(--font-bold);
+    color: var(--color-accent);
+    padding: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+nav.nav.main-nav .brand h1{
+    font-size: 1em;
+    margin: 0;
+}
+nav.nav.main-nav .brand img{
+    height: 2em;
+    max-height: 2em;
+    width: 100%;
+}
+
+.nav-container {
+    background-color: var(--color-darkest);
+    /*box-shadow: rgba(2, 2, 17, 0.2) 0px 2px 8px 0px;*/
+    border-bottom: 1px solid rgba(2,2,17,.5);
+    padding: .5em 0;
+    box-shadow: rgba(2, 2, 10, 0.24) 0px 3px 8px;
+    margin-bottom: .5em;;
+}
+
+
+.rightnow {
+    text-align: center;
+    margin: 0 .75em 0 0;
+    align-self: center;    
+}
+#rightnow_day {
+    font-family: var(--font-bold);
+    font-size: 1em;
+    margin-bottom: 0;
+    line-height: 2em;
+}
+
+

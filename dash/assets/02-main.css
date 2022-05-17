@@ -1,0 +1,34 @@
+/**
+* Main Body
+*/
+
+
+.row.row-1 {
+    min-height: 24em;
+}
+
+.timeseries_container {
+    
+}
+
+.timeseries_text {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    margin-bottom:1em;
+}
+
+.timeseries_text h2, .timeseries_text p {
+    flex: 1 0 auto;
+    margin-bottom: 0;
+}
+
+.timeseries_container p {
+    flex: 3 0 auto;
+    text-align: right;
+    font-family: var(--font-bold);
+}
+
+.timeseries_plot {
+    flex: 1 0 auto
+}
