@@ -10,13 +10,24 @@ from datetime import timedelta, datetime
 import plotly.graph_objs as go
 
 import json
-
+import re
 
 from pandas_datareader import data as pdr
 import yfinance as yf
 yf.pdr_override()
 
+
+
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
+
 PROD = False
+
+try:
+    nltk.data.find('vader_lexicon')
+except LookupError:
+    nltk.download('vader_lexicon')
+
 
 external_stylesheets = [
     'https://fonts.googleapis.com/css2?family=Open+Sans&display=swap',
@@ -92,6 +103,41 @@ def tidy_plot(fig_):
     fig_.update_xaxes(gridcolor=COLORS['color-darkGrey'])
     
     return fig_
+
+
+
+def get_sentiment(s):
+    sia = SentimentIntensityAnalyzer()
+    scores = sia.polarity_scores(s)
+    neg = scores['neg']
+    neu = scores['neu']
+    pos = scores['pos']
+    
+    return [neg, neu, pos]
+
+def clean_text(txt):
+    txt = re.sub(r"RT[\s]+", "", txt)
+    txt = txt.replace("\n", " ")
+    txt = re.sub(" +", " ", txt)
+    txt = re.sub(r"https?:\/\/\S+", "", txt)
+    txt = re.sub(r"(@[A-Za-z0–9_]+)|[^\w\s]|#", "", txt)
+    #txt = emoji.replace_emoji(txt, replace='')
+    txt.strip()
+    return txt
+
+def get_tweets_sentiment(sym):
+    tweets = pd.read_csv('./data/tweet_sample.csv')
+
+    if PROD == True:
+        pass 
+    tweets.columns = ["tweets"]
+    tweets["tweets"] = tweets["tweets"].apply(clean_text)
+    res = pd.DataFrame(tweets['tweets'].apply(lambda x: get_sentiment(x))) 
+    res = res.apply(lambda row: row['tweets'], axis=1, result_type='expand').rename(columns={0:'neg', 1:'neu', 2:'pos'})
+    scores = {'neg': res.mean()['neg'], 'neu': res.mean()['neu'], 'pos': res.mean()['pos'] }
+    
+
+    return scores
 
 ###############################################################
 ## Wrangle the data
@@ -321,13 +367,7 @@ app.layout = html.Div([
 
 
             html.H3("Twitter Sentiment", className="caption"),
-            html.Div([
-                # smiley_neutral
-                html.Img(src="./assets/icons/frown.svg"),
-                html.Img(src="./assets/icons/meh.svg"),
-                html.Img(src="./assets/icons/smile.svg"),
-
-            ], className="sentiment-container card"),
+            html.Div([], id="twitter_sentiment", className="sentiment-container card"),
 
         ], className="col-3 sidebar"),
 
@@ -339,8 +379,7 @@ app.layout = html.Div([
 
 
 
-        ],
-        className="container"    
+    ], className="container"    
     ),
 
 
@@ -359,9 +398,9 @@ app.layout = html.Div([
 @app.callback(
     Output('timeseries_title', 'children'),
     Output('timeseries-dcc','figure'),
-    #Output('loading-timeseries','children'),
     Output('timeseries_longname', 'children'),
     Output('company_profile', 'children'),
+    Output('twitter_sentiment', 'children'),
 
     Input(dropdown_symbols, 'value')
 )
@@ -410,8 +449,42 @@ def getTimeSeriesPlot(ticker_symbol):
             html.P(description, style={"text-align":"left", "fontSize":"smaller"})
         ]
     
+
+
+    ##########################################################
+    ## Make TA Plots
+    ##########################################################
+
+    make_ta_plots(fin_data)
+
+
+
+    ##########################################################
+    ## Get Tweets Sentiment
+    ##########################################################
+    twitter_sentiment_scores = get_tweets_sentiment(ticker_symbol)
+    tweet_label = max(twitter_sentiment_scores, key=twitter_sentiment_scores.get)
+    if tweet_label == 'neu':
+        tweet_label = 'Neutral'
+    elif tweet_label == 'neg':
+        tweet_label = 'Negative'
+    else:
+        tweet_label = 'Positive'
+
+    tweet_faces = [
+        html.Img(src="./assets/icons/frown.svg", style={'opacity': twitter_sentiment_scores['neg']}),
+        html.Img(src="./assets/icons/meh.svg", style={'opacity': twitter_sentiment_scores['neu']}),
+        html.Img(src="./assets/icons/smile.svg", style={'opacity': twitter_sentiment_scores['pos']}),
+        html.Div(tweet_label, className="tweet_sentiment_label")
+    ]
     
-    return [ticker_symbol, fig_ts, longName, profile_details]
+    return [ticker_symbol, fig_ts, longName, profile_details, tweet_faces]
+
+def make_ta_plots(fin_data):
+
+
+    return fin_data
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
