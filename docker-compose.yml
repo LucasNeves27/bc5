@@ -1,0 +1,13 @@
+services:
+  bcdash:
+    build:
+      context: .
+    image: bcdash:$VERSION
+    container_name: bcdash
+    ports:
+      - "8050:8050"
+    environment:
+      - TARGET=$TARGET
+    restart: unless-stopped
+    volumes:
+      -  ".:/code"
