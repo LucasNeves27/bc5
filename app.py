@@ -137,6 +137,8 @@ def get_tweets(sym):
     apiSecret = ""
     accessToken = ""
     accessTokenSecret = ""
+    apiKey = os.environ['TW_APIKEY']
+    print(apiKey, 'apiKey')
 
     if PROD == True:
         tk = pd.read_csv('./twitter.csv')
