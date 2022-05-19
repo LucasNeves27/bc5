@@ -193,16 +193,11 @@ def get_tweets_sentiment(sym):
     
     tweets = get_tweets(sym)
 
-    print('get_tweets_sentiment1')
-    #print(tweets.head(2))
     tweets.columns = ["tweets"]
-    print('get_tweets_sentiment2')
     tweets["tweets"] = tweets["tweets"].apply(clean_text)
-    print('get_tweets_sentiment3')
     res = pd.DataFrame(tweets['tweets'].apply(lambda x: get_sentiment(x))) 
     res = res.apply(lambda row: row['tweets'], axis=1, result_type='expand').rename(columns={0:'neg', 1:'neu', 2:'pos'})
     scores = {'neg': res.mean()['neg'], 'neu': res.mean()['neu'], 'pos': res.mean()['pos'] }
-    print('get_tweets_sentiment4')
     
 
     return scores
@@ -315,63 +310,63 @@ app.layout = html.Div([
         ], className='card'),
 
         ########## Second Row ##########
-        # html.Div([
+        html.Div([
 
-        # html.Div([
+        html.Div([
 
-        #         html.Div([
-        #             html.H3("Bollinger Bands", id='techanalysis_title'),
-        #             #html.P("Lorem Ipsum is awesome stuff"),
-        #             dcc.Loading(
-        #                     id="loading-ta",
-        #                     type="default",
-        #                     children=[
-        #                         dcc.Graph(id='techanalysis-dcc', style={'margin': '0'})
-        #                     ]),
-        #             html.H3("Moving Average Convergence Divergence", ),
+                html.Div([
+                    html.H3("Bollinger Bands", id='techanalysis_title'),
+                    #html.P("Lorem Ipsum is awesome stuff"),
+                    dcc.Loading(
+                            id="loading-ta",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc', style={'margin': '0'})
+                            ]),
+                    html.H3("Moving Average Convergence Divergence", ),
 
-        #             dcc.Loading(
-        #                     id="loading-ta2",
-        #                     type="default",
-        #                     children=[
-        #                         dcc.Graph(id='techanalysis-dcc2', style={'margin': '0'})
-        #                     ]),
-        #             html.H3("Momentum: RSI", ),
+                    dcc.Loading(
+                            id="loading-ta2",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc2', style={'margin': '0'})
+                            ]),
+                    html.H3("Momentum: RSI", ),
 
-        #             dcc.Loading(
-        #                     id="loading-ta3",
-        #                     type="default",
-        #                     children=[
-        #                         dcc.Graph(id='techanalysis-dcc3', style={'margin': '0'})
-        #                     ]),
-        #             html.H3("Volatility: ATR", ),
+                    dcc.Loading(
+                            id="loading-ta3",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc3', style={'margin': '0'})
+                            ]),
+                    html.H3("Volatility: ATR", ),
 
-        #             dcc.Loading(
-        #                     id="loading-ta4",
-        #                     type="default",
-        #                     children=[
-        #                         dcc.Graph(id='techanalysis-dcc4', style={'margin': '0'})
-        #                     ]),
-        #             html.H3("On Balance Volume", ),
+                    dcc.Loading(
+                            id="loading-ta4",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc4', style={'margin': '0'})
+                            ]),
+                    html.H3("On Balance Volume", ),
 
-        #             dcc.Loading(
-        #                     id="loading-ta5",
-        #                     type="default",
-        #                     children=[
-        #                         dcc.Graph(id='techanalysis-dcc5', style={'margin': '0'})
-        #                     ]),
+                    dcc.Loading(
+                            id="loading-ta5",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc5', style={'margin': '0'})
+                            ]),
 
-        #             html.Div(
-        #                 [
-        #                     ],
-        #                 className="techanalysis_container"
-        #             ),
+                    html.Div(
+                        [
+                            ],
+                        className="techanalysis_container"
+                    ),
 
-        #         ], className='col'),
+                ], className='col'),
 
-        #     ], className='row row-2'),
+            ], className='row row-2'),
 
-        # ], className='card'),
+        ], className='card'),
 
 
 
@@ -574,20 +569,20 @@ def getTimeSeriesPlot(ticker_symbol):
     ##########################################################
     ## Make TA Plots
     ##########################################################
-    # fig_dcc = go.Figure(layout=default_layout)
-    # fig_dcc = make_bb_plots(fin_data_ta, fig_dcc)
+    fig_dcc = go.Figure(layout=default_layout)
+    fig_dcc = make_bb_plots(fin_data_ta, fig_dcc)
 
-    # fig_dcc2 = go.Figure(layout=default_layout)
-    # fig_dcc2 = make_macd_plots(fin_data_ta, fig_dcc2)
+    fig_dcc2 = go.Figure(layout=default_layout)
+    fig_dcc2 = make_macd_plots(fin_data_ta, fig_dcc2)
 
-    # fig_dcc3 = go.Figure(layout=default_layout)
-    # fig_dcc3 = make_rsi_plots(fin_data_ta, fig_dcc3)
+    fig_dcc3 = go.Figure(layout=default_layout)
+    fig_dcc3 = make_rsi_plots(fin_data_ta, fig_dcc3)
 
-    # fig_dcc4 = go.Figure(layout=default_layout)
-    # fig_dcc4 = make_vol_plots(fin_data_ta, fig_dcc4)
+    fig_dcc4 = go.Figure(layout=default_layout)
+    fig_dcc4 = make_vol_plots(fin_data_ta, fig_dcc4)
 
-    # fig_dcc5 = go.Figure(layout=default_layout)
-    # fig_dcc5 = make_obv_plots(fin_data_ta, fig_dcc5)
+    fig_dcc5 = go.Figure(layout=default_layout)
+    fig_dcc5 = make_obv_plots(fin_data_ta, fig_dcc5)
 
     ##########################################################
     ## Get Tweets Sentiment
@@ -609,7 +604,7 @@ def getTimeSeriesPlot(ticker_symbol):
     ]
     
     return [ticker_symbol, fig_ts, 
-            #fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, 
+            fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, 
             longName, profile_details, tweet_faces]
 
 def make_bb_plots(fin_data_, fig_):
