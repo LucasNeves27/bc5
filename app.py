@@ -12,21 +12,29 @@ import plotly.graph_objs as go
 import json
 import re
 
+
 from pandas_datareader import data as pdr
 import yfinance as yf
 yf.pdr_override()
+import ta 
 
-
-
+import tweepy
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 
+import warnings
+warnings.filterwarnings('ignore')
+
+#PROD = True
 PROD = False
+
+TWEETSTOGET = 100
 
 try:
     nltk.data.find('vader_lexicon')
 except LookupError:
-    nltk.download('vader_lexicon')
+    if PROD == True:
+        nltk.download('vader_lexicon')
 
 
 external_stylesheets = [
@@ -43,12 +51,24 @@ COLORS = {
     "color-lightGrey": "#d2d6dd",
     "color-grey": "#747681",
     "color-darkGrey": "#353a53",
-    "font-color": "#c2c2d2"
+    "font-color": "#c2c2d2",
+    "color-yellow":  "#FFCD3F",
+    'color-red': "#FF3041",
+    "color-purple":'#731DD8',
+    "color-green":'#3bb001',
+    "color-accent": "#f10075"
 
 }
 
 LOADING_DIV = html.Div("Loading", className="loading-container")
 
+TAFEATS = [
+    "Open", "High", "Low", "Close", "Volume", 
+    'momentum_rsi', 
+    'trend_macd_signal', 'trend_macd_diff', 'trend_macd', 
+    'volatility_bbh', 'volatility_bbl', 'volatility_bbm', 
+    'volatility_atr', 'volume_obv'
+]
 ###############################################################
 ## Functions
 ###############################################################
@@ -101,10 +121,43 @@ def tidy_plot(fig_):
     fig_.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     fig_.update_yaxes(gridcolor=COLORS['color-darkGrey'])
     fig_.update_xaxes(gridcolor=COLORS['color-darkGrey'])
-    
+    fig_.update_xaxes(showspikes=True)
+    fig_.update_xaxes(spikethickness=1)
+    fig_.update_yaxes(showspikes=True)
+    fig_.update_yaxes(spikethickness=1)
     return fig_
 
+###########################
+## Sentiment Analysis
+###########################
 
+def get_tweets(sym):
+    apiKey = ""
+    apiSecret = ""
+    accessToken = ""
+    accessTokenSecret = ""
+
+    try:
+        tk = pd.read_csv('./../twitter.csv')
+        apiKey = tk.loc[tk['label']=='api']['key'].values[0]
+        apiSecret = tk.loc[tk['label']=='apisecret']['key'].values[0]
+        accessToken = tk.loc[tk['label']=='accesstoken']['key'].values[0]
+        accessTokenSecret = tk.loc[tk['label']=='accesstokensecret']['key'].values[0]
+    except:
+        pass
+
+    auth = tweepy.OAuthHandler(apiKey, apiSecret)
+    auth.set_access_token(accessToken, accessTokenSecret)
+    api = tweepy.API(auth)
+
+
+    tweets = tweepy.Cursor(api.search_tweets, q=sym, tweet_mode='extended', lang='en').items(TWEETSTOGET)
+    tweet_list = []
+    for t in tweets:
+        if not "bot" in str.lower(t.author.name) :
+            tweet_list.append(t.full_text)
+            
+    return tweet_list
 
 def get_sentiment(s):
     sia = SentimentIntensityAnalyzer()
@@ -129,7 +182,8 @@ def get_tweets_sentiment(sym):
     tweets = pd.read_csv('./data/tweet_sample.csv')
 
     if PROD == True:
-        pass 
+        tweets = pd.DataFrame(get_tweets(sym))
+
     tweets.columns = ["tweets"]
     tweets["tweets"] = tweets["tweets"].apply(clean_text)
     res = pd.DataFrame(tweets['tweets'].apply(lambda x: get_sentiment(x))) 
@@ -252,10 +306,50 @@ app.layout = html.Div([
         html.Div([
 
                 html.Div([
-                    html.H3(id='techanalysis_title'),
-                    html.P("Lorem Ipsum is awesome stuff"),
+                    html.H3("Bollinger Bands", id='techanalysis_title'),
+                    #html.P("Lorem Ipsum is awesome stuff"),
+                    dcc.Loading(
+                            id="loading-ta",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc', style={'margin': '0'})
+                            ]),
+                    html.H3("Moving Average Convergence Divergence", ),
+
+                    dcc.Loading(
+                            id="loading-ta2",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc2', style={'margin': '0'})
+                            ]),
+                    html.H3("Momentum: RSI", ),
+
+                    dcc.Loading(
+                            id="loading-ta3",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc3', style={'margin': '0'})
+                            ]),
+                    html.H3("Volatility: ATR", ),
+
+                    dcc.Loading(
+                            id="loading-ta4",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc4', style={'margin': '0'})
+                            ]),
+                    html.H3("On Balance Volume", ),
+
+                    dcc.Loading(
+                            id="loading-ta5",
+                            type="default",
+                            children=[
+                                dcc.Graph(id='techanalysis-dcc5', style={'margin': '0'})
+                            ]),
+
                     html.Div(
-                        [dcc.Graph(id='techanalysis_dcc', style={'margin': '0'})],
+                        [
+                            ],
                         className="techanalysis_container"
                     ),
 
@@ -352,7 +446,7 @@ app.layout = html.Div([
 
         html.Div([
             
-            html.H3("Symbol Selector", className="caption"),
+            html.H3("Symbol Selector", className="caption", style={"marginTop":0}),
             html.Div([
                     dropdown_symbols
             ], id='symbol_selector', className="symbol_selector_container"),
@@ -398,6 +492,11 @@ app.layout = html.Div([
 @app.callback(
     Output('timeseries_title', 'children'),
     Output('timeseries-dcc','figure'),
+    Output('techanalysis-dcc','figure'),
+    Output('techanalysis-dcc2','figure'),
+    Output('techanalysis-dcc3','figure'),
+    Output('techanalysis-dcc4','figure'),
+    Output('techanalysis-dcc5','figure'),
     Output('timeseries_longname', 'children'),
     Output('company_profile', 'children'),
     Output('twitter_sentiment', 'children'),
@@ -406,6 +505,12 @@ app.layout = html.Div([
 )
 def getTimeSeriesPlot(ticker_symbol):
     fin_data, fin_info = get_findata(ticker_symbol, START_DATE, END_DATE)
+    fin_data['Volume'] = fin_data['Volume'].astype(float)
+
+    fin_data_ta = ta.add_all_ta_features(
+        fin_data, "Open", "High", "Low", "Close", "Volume", fillna=True
+    )[TAFEATS]
+
     ## Split X and Y
     #split_fin_data = shift_split_data(fin_data, 'Close')
     #Y = split_fin_data['Close']
@@ -425,16 +530,17 @@ def getTimeSeriesPlot(ticker_symbol):
     
     fig_ts = go.Figure(layout=default_layout)
     fig_ts.add_trace(go.Scatter(x=fin_data.index, y=fin_data['Close'],
-                        mode='lines',
-                        marker=dict(color=COLORS['color-primary'])
-                        ))
+                    mode='lines',
+                    line_width=1,
+                    marker=dict(color=COLORS['color-primary'])
+                    ))
+
+
+
 
     fig_ts = tidy_plot(fig_ts)
-    fig_ts.update_xaxes(showspikes=True)
-    fig_ts.update_xaxes(spikethickness=1)
-    fig_ts.update_yaxes(showspikes=True)
-    fig_ts.update_yaxes(spikethickness=1)
     
+
     profile_details = [
             logoImg,
             html.Ul([
@@ -446,7 +552,7 @@ def getTimeSeriesPlot(ticker_symbol):
     if len(sector) < 1 and len(industry) < 1 :
         profile_details = [
             html.P(html.Strong(ticker_symbol)),
-            html.P(description, style={"text-align":"left", "fontSize":"smaller"})
+            html.P(description, style={"textAlign":"left", "fontSize":"smaller"})
         ]
     
 
@@ -454,10 +560,20 @@ def getTimeSeriesPlot(ticker_symbol):
     ##########################################################
     ## Make TA Plots
     ##########################################################
+    fig_dcc = go.Figure(layout=default_layout)
+    fig_dcc = make_bb_plots(fin_data_ta, fig_dcc)
 
-    make_ta_plots(fin_data)
+    fig_dcc2 = go.Figure(layout=default_layout)
+    fig_dcc2 = make_macd_plots(fin_data_ta, fig_dcc2)
 
+    fig_dcc3 = go.Figure(layout=default_layout)
+    fig_dcc3 = make_rsi_plots(fin_data_ta, fig_dcc3)
 
+    fig_dcc4 = go.Figure(layout=default_layout)
+    fig_dcc4 = make_vol_plots(fin_data_ta, fig_dcc4)
+
+    fig_dcc5 = go.Figure(layout=default_layout)
+    fig_dcc5 = make_obv_plots(fin_data_ta, fig_dcc5)
 
     ##########################################################
     ## Get Tweets Sentiment
@@ -472,18 +588,88 @@ def getTimeSeriesPlot(ticker_symbol):
         tweet_label = 'Positive'
 
     tweet_faces = [
-        html.Img(src="./assets/icons/frown.svg", style={'opacity': twitter_sentiment_scores['neg']}),
-        html.Img(src="./assets/icons/meh.svg", style={'opacity': twitter_sentiment_scores['neu']}),
-        html.Img(src="./assets/icons/smile.svg", style={'opacity': twitter_sentiment_scores['pos']}),
+        html.Img(src="./assets/icons/frown.svg", style={'opacity': max(.2,twitter_sentiment_scores['neg'])}),
+        html.Img(src="./assets/icons/meh.svg", style={'opacity': max(.2,twitter_sentiment_scores['neu'])}),
+        html.Img(src="./assets/icons/smile.svg", style={'opacity': max(.2,twitter_sentiment_scores['pos'])}),
         html.Div(tweet_label, className="tweet_sentiment_label")
     ]
     
-    return [ticker_symbol, fig_ts, longName, profile_details, tweet_faces]
+    return [ticker_symbol, fig_ts, fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, longName, profile_details, tweet_faces]
 
-def make_ta_plots(fin_data):
+def make_bb_plots(fin_data_, fig_):
+
+    bb_cols = ['Close', 'volatility_bbh', 'volatility_bbl', 'volatility_bbm']
+    bb_colors = [COLORS['color-primary'], COLORS['color-yellow'], COLORS['color-yellow'], COLORS['color-red']]
+    plot_opts = [{'line_width': 1},{'line_width': 1},{'line_width': 1,'line_dash':"dot"},{'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, bb_cols, bb_colors, plot_opts)
+    
+    fig_ = tidy_plot(fig_)
+    fig_.update_traces(showlegend=True)
+    fig_.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+
+    return fig_
+
+def make_macd_plots(fin_data_, fig_):
+    macd_cols = ['trend_macd_diff', 'trend_macd', 'trend_macd_signal']
+    macd_colors = [ COLORS['color-green'], COLORS['color-yellow'], COLORS['color-red']]
+    plot_opts = [{'line_width': 1, 'line_dash':"dot"}, {'opacity': 0.7, }, {'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+
+    fig_.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor='rgba(255,255,255,.5)')
+    fig_ = tidy_plot(fig_)
+    fig_.update_traces(showlegend=True)
+    fig_.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+    return fig_
+
+def make_rsi_plots(fin_data_, fig_):
+    macd_cols = ['momentum_rsi',]
+    macd_colors = [ COLORS['color-purple'], ]
+    plot_opts = [{'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+    fig_ = tidy_plot(fig_)
+
+    return fig_
 
 
-    return fin_data
+def make_obv_plots(fin_data_, fig_):
+    macd_cols = ['volume_obv',]
+    macd_colors = [ COLORS['color-purple'], ]
+    plot_opts = [{'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+    fig_ = tidy_plot(fig_)
+
+    return fig_
+
+def make_vol_plots(fin_data_, fig_):
+    macd_cols = ['volatility_atr',]
+    macd_colors = [ COLORS['color-accent'], ]
+    plot_opts = [{'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+    fig_ = tidy_plot(fig_)
+
+    return fig_
+def make_ta_plots(data_, fig_, cols_, colors_, plot_opts):
+
+    for i in range(len(cols_)):
+        fig_.add_trace(go.Scatter(x=data_.index, y=data_[cols_[i]],
+                    mode='lines',
+                    marker=dict(color=colors_[i]),
+                    name=cols_[i],
+                    **plot_opts[i]
+                    ))
+    return fig_
 
 
 if __name__ == '__main__':
