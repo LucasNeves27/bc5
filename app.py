@@ -32,9 +32,8 @@ TWEETSTOGET = 100
 
 try:
     nltk.data.find('vader_lexicon')
-except LookupError:
-    if PROD == True:
-        nltk.download('vader_lexicon')
+except:
+    nltk.download('vader_lexicon')
 
 
 external_stylesheets = [
