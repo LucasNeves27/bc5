@@ -11,6 +11,7 @@ import plotly.graph_objs as go
 
 import json
 import re
+import os
 
 
 from pandas_datareader import data as pdr
@@ -32,6 +33,7 @@ TWEETSTOGET = 100
 
 try:
     nltk.data.find('vader_lexicon')
+    #/vader_lexicon/vader_lexicon.txt
 except:
     nltk.download('vader_lexicon')
 
@@ -136,27 +138,36 @@ def get_tweets(sym):
     accessToken = ""
     accessTokenSecret = ""
 
-    try:
-        tk = pd.read_csv('./../twitter.csv')
+    if PROD == True:
+        tk = pd.read_csv('./twitter.csv')
         apiKey = tk.loc[tk['label']=='api']['key'].values[0]
         apiSecret = tk.loc[tk['label']=='apisecret']['key'].values[0]
         accessToken = tk.loc[tk['label']=='accesstoken']['key'].values[0]
         accessTokenSecret = tk.loc[tk['label']=='accesstokensecret']['key'].values[0]
-    except:
-        pass
+        
+        tweet_list = []
 
-    auth = tweepy.OAuthHandler(apiKey, apiSecret)
-    auth.set_access_token(accessToken, accessTokenSecret)
-    api = tweepy.API(auth)
+        try:
+
+            auth = tweepy.OAuthHandler(apiKey, apiSecret)
+            auth.set_access_token(accessToken, accessTokenSecret)
+            api = tweepy.API(auth)
 
 
-    tweets = tweepy.Cursor(api.search_tweets, q=sym, tweet_mode='extended', lang='en').items(TWEETSTOGET)
-    tweet_list = []
-    for t in tweets:
-        if not "bot" in str.lower(t.author.name) :
-            tweet_list.append(t.full_text)
+            tweets = tweepy.Cursor(api.search_tweets, q=sym, tweet_mode='extended', lang='en').items(TWEETSTOGET)
+            for t in tweets:
+                if not "bot" in str.lower(t.author.name) :
+                    tweet_list.append(t.full_text)
             
-    return tweet_list
+            print(tweet_list[:3])
+
+            return pd.DataFrame(tweet_list)
+        except:
+            pass
+    else:
+        return pd.read_csv('./data/tweet_sample.csv')
+
+
 
 def get_sentiment(s):
     sia = SentimentIntensityAnalyzer()
@@ -178,16 +189,20 @@ def clean_text(txt):
     return txt
 
 def get_tweets_sentiment(sym):
-    tweets = pd.read_csv('./data/tweet_sample.csv')
 
-    if PROD == True:
-        tweets = pd.DataFrame(get_tweets(sym))
+    
+    tweets = get_tweets(sym)
 
+    print('get_tweets_sentiment1')
+    #print(tweets.head(2))
     tweets.columns = ["tweets"]
+    print('get_tweets_sentiment2')
     tweets["tweets"] = tweets["tweets"].apply(clean_text)
+    print('get_tweets_sentiment3')
     res = pd.DataFrame(tweets['tweets'].apply(lambda x: get_sentiment(x))) 
     res = res.apply(lambda row: row['tweets'], axis=1, result_type='expand').rename(columns={0:'neg', 1:'neu', 2:'pos'})
     scores = {'neg': res.mean()['neg'], 'neu': res.mean()['neu'], 'pos': res.mean()['pos'] }
+    print('get_tweets_sentiment4')
     
 
     return scores
@@ -300,63 +315,63 @@ app.layout = html.Div([
         ], className='card'),
 
         ########## Second Row ##########
-        html.Div([
+        # html.Div([
 
-        html.Div([
+        # html.Div([
 
-                html.Div([
-                    html.H3("Bollinger Bands", id='techanalysis_title'),
-                    #html.P("Lorem Ipsum is awesome stuff"),
-                    dcc.Loading(
-                            id="loading-ta",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc', style={'margin': '0'})
-                            ]),
-                    html.H3("Moving Average Convergence Divergence", ),
+        #         html.Div([
+        #             html.H3("Bollinger Bands", id='techanalysis_title'),
+        #             #html.P("Lorem Ipsum is awesome stuff"),
+        #             dcc.Loading(
+        #                     id="loading-ta",
+        #                     type="default",
+        #                     children=[
+        #                         dcc.Graph(id='techanalysis-dcc', style={'margin': '0'})
+        #                     ]),
+        #             html.H3("Moving Average Convergence Divergence", ),
 
-                    dcc.Loading(
-                            id="loading-ta2",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc2', style={'margin': '0'})
-                            ]),
-                    html.H3("Momentum: RSI", ),
+        #             dcc.Loading(
+        #                     id="loading-ta2",
+        #                     type="default",
+        #                     children=[
+        #                         dcc.Graph(id='techanalysis-dcc2', style={'margin': '0'})
+        #                     ]),
+        #             html.H3("Momentum: RSI", ),
 
-                    dcc.Loading(
-                            id="loading-ta3",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc3', style={'margin': '0'})
-                            ]),
-                    html.H3("Volatility: ATR", ),
+        #             dcc.Loading(
+        #                     id="loading-ta3",
+        #                     type="default",
+        #                     children=[
+        #                         dcc.Graph(id='techanalysis-dcc3', style={'margin': '0'})
+        #                     ]),
+        #             html.H3("Volatility: ATR", ),
 
-                    dcc.Loading(
-                            id="loading-ta4",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc4', style={'margin': '0'})
-                            ]),
-                    html.H3("On Balance Volume", ),
+        #             dcc.Loading(
+        #                     id="loading-ta4",
+        #                     type="default",
+        #                     children=[
+        #                         dcc.Graph(id='techanalysis-dcc4', style={'margin': '0'})
+        #                     ]),
+        #             html.H3("On Balance Volume", ),
 
-                    dcc.Loading(
-                            id="loading-ta5",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc5', style={'margin': '0'})
-                            ]),
+        #             dcc.Loading(
+        #                     id="loading-ta5",
+        #                     type="default",
+        #                     children=[
+        #                         dcc.Graph(id='techanalysis-dcc5', style={'margin': '0'})
+        #                     ]),
 
-                    html.Div(
-                        [
-                            ],
-                        className="techanalysis_container"
-                    ),
+        #             html.Div(
+        #                 [
+        #                     ],
+        #                 className="techanalysis_container"
+        #             ),
 
-                ], className='col'),
+        #         ], className='col'),
 
-            ], className='row row-2'),
+        #     ], className='row row-2'),
 
-        ], className='card'),
+        # ], className='card'),
 
 
 
@@ -491,11 +506,11 @@ app.layout = html.Div([
 @app.callback(
     Output('timeseries_title', 'children'),
     Output('timeseries-dcc','figure'),
-    Output('techanalysis-dcc','figure'),
-    Output('techanalysis-dcc2','figure'),
-    Output('techanalysis-dcc3','figure'),
-    Output('techanalysis-dcc4','figure'),
-    Output('techanalysis-dcc5','figure'),
+    # Output('techanalysis-dcc','figure'),
+    # Output('techanalysis-dcc2','figure'),
+    # Output('techanalysis-dcc3','figure'),
+    # Output('techanalysis-dcc4','figure'),
+    # Output('techanalysis-dcc5','figure'),
     Output('timeseries_longname', 'children'),
     Output('company_profile', 'children'),
     Output('twitter_sentiment', 'children'),
@@ -559,20 +574,20 @@ def getTimeSeriesPlot(ticker_symbol):
     ##########################################################
     ## Make TA Plots
     ##########################################################
-    fig_dcc = go.Figure(layout=default_layout)
-    fig_dcc = make_bb_plots(fin_data_ta, fig_dcc)
+    # fig_dcc = go.Figure(layout=default_layout)
+    # fig_dcc = make_bb_plots(fin_data_ta, fig_dcc)
 
-    fig_dcc2 = go.Figure(layout=default_layout)
-    fig_dcc2 = make_macd_plots(fin_data_ta, fig_dcc2)
+    # fig_dcc2 = go.Figure(layout=default_layout)
+    # fig_dcc2 = make_macd_plots(fin_data_ta, fig_dcc2)
 
-    fig_dcc3 = go.Figure(layout=default_layout)
-    fig_dcc3 = make_rsi_plots(fin_data_ta, fig_dcc3)
+    # fig_dcc3 = go.Figure(layout=default_layout)
+    # fig_dcc3 = make_rsi_plots(fin_data_ta, fig_dcc3)
 
-    fig_dcc4 = go.Figure(layout=default_layout)
-    fig_dcc4 = make_vol_plots(fin_data_ta, fig_dcc4)
+    # fig_dcc4 = go.Figure(layout=default_layout)
+    # fig_dcc4 = make_vol_plots(fin_data_ta, fig_dcc4)
 
-    fig_dcc5 = go.Figure(layout=default_layout)
-    fig_dcc5 = make_obv_plots(fin_data_ta, fig_dcc5)
+    # fig_dcc5 = go.Figure(layout=default_layout)
+    # fig_dcc5 = make_obv_plots(fin_data_ta, fig_dcc5)
 
     ##########################################################
     ## Get Tweets Sentiment
@@ -593,7 +608,9 @@ def getTimeSeriesPlot(ticker_symbol):
         html.Div(tweet_label, className="tweet_sentiment_label")
     ]
     
-    return [ticker_symbol, fig_ts, fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, longName, profile_details, tweet_faces]
+    return [ticker_symbol, fig_ts, 
+            #fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, 
+            longName, profile_details, tweet_faces]
 
 def make_bb_plots(fin_data_, fig_):
 
