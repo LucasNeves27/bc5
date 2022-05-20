@@ -313,55 +313,70 @@ app.layout = html.Div([
         ########## Second Row ##########
         html.Div([
 
-        html.Div([
+        html.Div([ ## ROW open
 
-                html.Div([
-                    html.H3("Bollinger Bands", id='techanalysis_title'),
-                    #html.P("Lorem Ipsum is awesome stuff"),
-                    dcc.Loading(
-                            id="loading-ta",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc', style={'margin': '0'})
-                            ]),
-                    html.H3("Moving Average Convergence Divergence", ),
+                html.Div([ ## COL open
+                    ######### Begin Tabbed Area #########
+                    html.Div([
 
-                    dcc.Loading(
-                            id="loading-ta2",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc2', style={'margin': '0'})
-                            ]),
-                    html.H3("Momentum: RSI", ),
+                        dcc.Tabs([
+                            dcc.Tab(label='BB', children=[
+                                html.H3("Bollinger Bands", id='techanalysis_title'),
+                                dcc.Loading(
+                                    id="loading-ta",
+                                    type="default",
+                                    children=[
+                                        dcc.Graph(id='techanalysis-dcc', style={'margin': '0'})
+                                    ]),
 
-                    dcc.Loading(
-                            id="loading-ta3",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc3', style={'margin': '0'})
-                            ]),
-                    html.H3("Volatility: ATR", ),
+                            ], className="ta-tab", selected_className="ta-tab-selected"),
+                            dcc.Tab(label='MACD', children=[
+                                html.H3("Moving Average Convergence Divergence", ),
+                                dcc.Loading(
+                                    id="loading-ta2",
+                                    type="default",
+                                    children=[
+                                        dcc.Graph(id='techanalysis-dcc2', style={'margin': '0'})
+                                    ]),
+                            ], className="ta-tab", selected_className="ta-tab-selected"),
 
-                    dcc.Loading(
-                            id="loading-ta4",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc4', style={'margin': '0'})
-                            ]),
-                    html.H3("On Balance Volume", ),
+                            dcc.Tab(label='RSI', children=[
+                                html.H3("Momentum: RSI", ),
+                                dcc.Loading(
+                                    id="loading-ta3",
+                                    type="default",
+                                    children=[
+                                        dcc.Graph(id='techanalysis-dcc3', style={'margin': '0'})
+                                ]),
+                            ], className="ta-tab", selected_className="ta-tab-selected"),
 
-                    dcc.Loading(
-                            id="loading-ta5",
-                            type="default",
-                            children=[
-                                dcc.Graph(id='techanalysis-dcc5', style={'margin': '0'})
-                            ]),
+                            dcc.Tab(label='ATR', children=[
+                                html.H3("Volatility: ATR", ),
+                                dcc.Loading(
+                                    id="loading-ta4",
+                                    type="default",
+                                    children=[
+                                        dcc.Graph(id='techanalysis-dcc4', style={'margin': '0'})
+                                ]),
+                            ], className="ta-tab", selected_className="ta-tab-selected"),
 
-                    html.Div(
-                        [
-                            ],
-                        className="techanalysis_container"
-                    ),
+                            dcc.Tab(label='OBV', children=[
+                                html.H3("On Balance Volume", ),
+                                dcc.Loading(
+                                    id="loading-ta5",
+                                    type="default",
+                                    children=[
+                                        dcc.Graph(id='techanalysis-dcc5', style={'margin': '0'})
+                                    ]),
+                            ], className="ta-tab", selected_className="ta-tab-selected"),
+                        ]), ## close dcc.Tabs
+                    ], className="tabbed"),
+                    
+
+                    
+                    ######### End Tabbed Area #########
+                    
+
 
                 ], className='col'),
 
@@ -372,59 +387,6 @@ app.layout = html.Div([
 
 
         ########## Third Row ##########
-        html.Div([
-
-            html.Div([
-                html.Div([
-                    html.Div([
-                            html.Div([
-                                html.H3("Header Here")
-                                ], className="country_profile_label"),
-                            html.Div([
-                                
-                            ], id='country_selectorx', className="country_profile_selector"),
-                        ], className="country_profile_title"),
-
-                ], className='col-7'),
-                html.Div(className='col'),
-            ], className="row"),
-
-            html.Div([
-                html.Div([
-                    
-                    html.Div([
-                        html.H4("Awesome Title"),
-                        html.P(html.Em("Culpa aliqua culpa velit laboris sit sunt est laboris duis anim culpa.")),
-
-                        html.Div([
-                            dcc.Graph(id='sunburst_sources', style={'width': '95%', 'margin': '0 auto'}),
-
-                        ], className='sunburst_container'
-                        ),
-                    ]),
-                    ],
-                    className='col-6'),
-                html.Div([
-                    html.Div([
-                            html.H4(["Lorem Ipsum", html.Br(), html.Span(id='country_selection')]),
-                            html.P("Anim elit proident proident exercitation cillum cillum nisi sit aliquip commodo."),
-                            dcc.Graph(id='gdp_pct_ts', style={'margin': '0'}),
-                            
-
-                            html.H4(["Foo Bar Baz ", html.Span(id='country_selection2')]),
-                            html.P("Labore aute duis voluptate veniam voluptate anim mollit cupidatat ipsum ipsum exercitation irure."),
-                            dcc.Graph(id='pct_ts', style={'margin': '0'}),
-                            
-
-                    ], ),
-                    ],
-                    className='col ranking_container'),
-
-
-            ],
-            className='row'),
-
-        ], className='card'),
 
         ################### References ###################
         html.Div([
