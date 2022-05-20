@@ -24,7 +24,7 @@
 input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="color"]):not([type="button"]):not([type="reset"])
  {
     border-color: var(--color-darkGrey);
-
+    color: var(--font-color) !important;
 }
 
 .Select-menu-outer {
