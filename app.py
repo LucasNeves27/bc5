@@ -311,6 +311,7 @@ app.layout = html.Div([
         ], className='card'),
 
         ########## Second Row ##########
+        html.H3("Technical Analysis Indicators", className="caption"),
         html.Div([
 
         html.Div([ ## ROW open
@@ -392,14 +393,16 @@ app.layout = html.Div([
         html.Div([
             html.Div([
                 html.Div([
-                    html.H4("Apex Pattern Deployers"),
-                    html.P("Kinney / Mendes / Neves / Pontejos")
-                ], className='col-6 authors'),
+                    html.Div([
+                        html.Img(src="/assets/logo-branco.png"),
+                        html.Img(src="/assets/logo.png"),
+                    ], className='logo-containers'),
+                    html.Div([
+                        html.H4("Apex Pattern Deployers"),
+                        html.P("Kinney / Mendes / Neves / Pontejos")
+                    ]),
+                ], className='col authors'),
 
-                html.Div([
-                    html.H5("Data Sources"),
-                    html.H5("Assets Used"),
-                ], className='col sources')
             ], className='row'),    
         ], className='card'),
 
@@ -410,7 +413,7 @@ app.layout = html.Div([
 
 
 
-    ], className="col-9"),
+    ], className="col-9 main"),
 
     ########## End Main Body ##########    
 

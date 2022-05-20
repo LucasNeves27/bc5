@@ -1,7 +1,10 @@
 /**
 * Main Body
 */
+.main .caption {
 
+    margin-top: 2em;
+}
 
 .row.row-1 {
     min-height: 24em;
@@ -50,7 +53,7 @@
     background-color: var(--bg-color) !important;
     border: 0px!important;
     border-bottom: 2px solid var(--color-primary) !important;
-    padding: .5em;
+    padding: .5em !important;
 }
 
 .tab:hover, 
@@ -75,3 +78,26 @@
 
 }
 
+.dash-spinner.dash-default-spinner > div {
+    background-color: var(--color-accent);
+}
+
+.authors {
+    display: flex;
+    flex-direction: row;
+}
+.logo-containers  {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: end;
+    margin-right: 1em;
+}
+.logo-containers img {
+    height: 4em;
+    max-height: 4em;
+    width: auto;
+    margin: .5em;
+    opacity: .8;
+
+}
