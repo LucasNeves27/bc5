@@ -57,7 +57,9 @@ COLORS = {
     'color-red': "#FF3041",
     "color-purple":'#731DD8',
     "color-green":'#3bb001',
-    "color-accent": "#f10075"
+    "color-accent": "#f10075",
+    "color-lime": "#affc41",
+    "color-orange": "#fb8b24"
 
 }
 
@@ -122,10 +124,9 @@ def tidy_plot(fig_):
     fig_.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     fig_.update_yaxes(gridcolor=COLORS['color-darkGrey'])
     fig_.update_xaxes(gridcolor=COLORS['color-darkGrey'])
-    fig_.update_xaxes(showspikes=True)
-    fig_.update_xaxes(spikethickness=1)
-    fig_.update_yaxes(showspikes=True)
-    fig_.update_yaxes(spikethickness=1)
+    fig_.update_xaxes(showspikes=True, spikethickness=1)
+    fig_.update_yaxes(showspikes=True, spikethickness=1)
+    fig_.update_yaxes(zerolinewidth=1, zerolinecolor='rgba(255,255,255,.5)')
     return fig_
 
 ###########################
@@ -611,7 +612,10 @@ def make_bb_plots(fin_data_, fig_):
 
     bb_cols = ['Close', 'volatility_bbh', 'volatility_bbl', 'volatility_bbm']
     bb_colors = [COLORS['color-primary'], COLORS['color-yellow'], COLORS['color-yellow'], COLORS['color-red']]
-    plot_opts = [{'line_width': 1},{'line_width': 1},{'line_width': 1,'line_dash':"dot"},{'line_width': 1}]
+    plot_opts = [{'line_width': 1},
+                 {'line_width': 1, 'line_dash':"dot"},
+                 {'line_width': 1,'line_dash':"dot"},
+                 {'line_width': 1}]
     make_ta_plots(fin_data_, fig_, bb_cols, bb_colors, plot_opts)
     
     fig_ = tidy_plot(fig_)
@@ -628,8 +632,10 @@ def make_bb_plots(fin_data_, fig_):
 
 def make_macd_plots(fin_data_, fig_):
     macd_cols = ['trend_macd_diff', 'trend_macd', 'trend_macd_signal']
-    macd_colors = [ COLORS['color-green'], COLORS['color-yellow'], COLORS['color-red']]
-    plot_opts = [{'line_width': 1, 'line_dash':"dot"}, {'opacity': 0.7, }, {'line_width': 1}]
+    macd_colors = [ COLORS['color-lime'], COLORS['color-orange'], COLORS['color-yellow']]
+    plot_opts = [{'line_width': 1, 'line_dash':"dot"}, 
+                 {'line_width': 1, 'line_dash':"dot"}, 
+                 {'line_width': 1, }]
     make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
 
     fig_.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor='rgba(255,255,255,.5)')
@@ -646,7 +652,7 @@ def make_macd_plots(fin_data_, fig_):
 
 def make_rsi_plots(fin_data_, fig_):
     macd_cols = ['momentum_rsi',]
-    macd_colors = [ COLORS['color-purple'], ]
+    macd_colors = [ COLORS['color-orange'], ]
     plot_opts = [{'line_width': 1}]
     make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
     fig_ = tidy_plot(fig_)
@@ -656,7 +662,7 @@ def make_rsi_plots(fin_data_, fig_):
 
 def make_obv_plots(fin_data_, fig_):
     macd_cols = ['volume_obv',]
-    macd_colors = [ COLORS['color-purple'], ]
+    macd_colors = [ COLORS['color-orange'], ]
     plot_opts = [{'line_width': 1}]
     make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
     fig_ = tidy_plot(fig_)
@@ -665,7 +671,7 @@ def make_obv_plots(fin_data_, fig_):
 
 def make_vol_plots(fin_data_, fig_):
     macd_cols = ['volatility_atr',]
-    macd_colors = [ COLORS['color-accent'], ]
+    macd_colors = [ COLORS['color-orange'], ]
     plot_opts = [{'line_width': 1}]
     make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
     fig_ = tidy_plot(fig_)
@@ -677,7 +683,7 @@ def make_ta_plots(data_, fig_, cols_, colors_, plot_opts):
         fig_.add_trace(go.Scatter(x=data_.index, y=data_[cols_[i]],
                     mode='lines',
                     marker=dict(color=colors_[i]),
-                    name=cols_[i],
+                    name=str.upper(str.replace(cols_[i], "_", " ")),
                     **plot_opts[i]
                     ))
     return fig_
