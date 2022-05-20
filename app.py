@@ -575,12 +575,13 @@ def getTimeSeriesPlot(ticker_symbol):
 
 def make_bb_plots(fin_data_, fig_):
 
-    bb_cols = ['Close', 'volatility_bbh', 'volatility_bbl', 'volatility_bbm']
-    bb_colors = [COLORS['color-primary'], COLORS['color-yellow'], COLORS['color-yellow'], COLORS['color-red']]
+    bb_cols = ['Close', 'volatility_bbm', 'volatility_bbh', 'volatility_bbl', ]
+    bb_colors = [COLORS['color-primary'], COLORS['color-red'], COLORS['color-yellow'], COLORS['color-yellow'], ]
     plot_opts = [{'line_width': 1},
+                 {'line_width': 1},
                  {'line_width': 1, 'line_dash':"dot"},
                  {'line_width': 1,'line_dash':"dot"},
-                 {'line_width': 1}]
+                 ]
     make_ta_plots(fin_data_, fig_, bb_cols, bb_colors, plot_opts)
     
     fig_ = tidy_plot(fig_)
@@ -589,8 +590,8 @@ def make_bb_plots(fin_data_, fig_):
         orientation="h",
         yanchor="bottom",
         y=1.02,
-        xanchor="right",
-        x=1
+        xanchor="left",
+        x=0
     ))
 
     return fig_
@@ -610,8 +611,8 @@ def make_macd_plots(fin_data_, fig_):
         orientation="h",
         yanchor="bottom",
         y=1.02,
-        xanchor="right",
-        x=1
+        xanchor="left",
+        x=0
     ))
     return fig_
 
