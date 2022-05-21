@@ -296,7 +296,7 @@ dropdown_symbols = dcc.Dropdown(
 ###############################################################
 ## APP
 ###############################################################
-title = "[APEX/DASH]"
+title = "[APEX·DASH]"
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -455,10 +455,15 @@ app.layout = html.Div([
         html.Div([
             html.Div([
                 html.Div([
-                    dcc.Graph(id='treemap-dcc'),
+                    dcc.Loading(children=[
+                        html.P("Market Capitalization", style={"margin":0}),
+                        dcc.Graph(id='treemap-dcc'),
+                    ], type="default"),
                 ], className="col"),
                 html.Div([
-                    dcc.Graph(figure=make_sparklines()),
+                    dcc.Loading(children=[
+                        dcc.Graph(figure=make_sparklines()),
+                    ], type="default"),
                 ], className="col"),
             ], className='row'),
         ], className="card"),
@@ -466,22 +471,7 @@ app.layout = html.Div([
 
         ########## Fourth Row ##########
 
-        ################### References ###################
-        html.Div([
-            html.Div([
-                html.Div([
-                    html.Div([
-                        html.Img(src="/assets/logo-branco.png"),
-                        html.Img(src="/assets/logo.png"),
-                    ], className='logo-containers'),
-                    html.Div([
-                        html.H4("Apex Pattern Deployers"),
-                        html.P("Kinney / Mendes / Neves / Pontejos")
-                    ]),
-                ], className='col authors'),
 
-            ], className='row'),    
-        ], className='card'),
 
 
 
@@ -514,6 +504,43 @@ app.layout = html.Div([
 
             html.H3("Twitter Sentiment", className="caption"),
             html.Div([], id="twitter_sentiment", className="sentiment-container card"),
+
+        ################### References ###################
+        html.H3("External Links", className="caption"),
+        html.Div([
+            html.P("Data Sources", className="linkstitle"),
+            html.Ul([
+                html.Li(html.A("Daily stock data", href="https://finance.yahoo.com/")),
+                html.Li(html.A("S&P constituents", href="https://github.com/datasets/s-and-p-500-companies")),
+                html.Li(html.A("Tweets", href="https://twitter.com/")),
+            ], className="sources"),
+            html.P("Code", className="linkstitle"),
+            html.Ul([
+                html.Li(html.A("GitHub Repo", href="https://github.com/fpontejos/bc5")),
+            ], className="sources"),
+        ], className="card"),
+
+        html.H3("The Team", className="caption"),
+        
+        html.Div([
+            html.Div([
+                html.Div([
+                    
+                    html.Div([
+                        html.Img(src="/assets/logo-branco.png"),
+                        html.Img(src="/assets/logo.png"),
+                    ], className='logo-containers'),
+                    html.Div([
+                        html.H4("Apex Pattern Deployers"),
+                        html.P("Kinney · Mendes"), 
+                        html.P("Neves · Pontejos"),
+                        html.P(html.Em("We are not financial advisors and this is not financial advise."), className="footnote"),
+                    ], className="authors",), 
+                ], className='col authors-container'),
+
+            ], className='row'),    
+        ], className='card'),
+
 
         ], className="col-3 sidebar"),
 
@@ -611,7 +638,7 @@ def getTimeSeriesPlot(ticker_symbol):
     ), layout=default_layout)
 
     fig_cs = tidy_plot(fig_cs)
-    #fig_cs.update_layout(height=400)
+
     fig_cs.update_layout(xaxis_rangeslider_visible=False)
     fig_cs.update_traces(line={'width':1})
 
@@ -653,6 +680,10 @@ def getTimeSeriesPlot(ticker_symbol):
     fig_dcc5 = go.Figure(layout=default_layout)
     fig_dcc5 = make_obv_plots(fin_data_ta, fig_dcc5)
 
+    ##########################################################
+    ## Make Treemap
+    ##########################################################
+
 
     fig_tm = go.Figure(layout=default_layout)
     fig_tm = make_treemap(fig_tm)
@@ -683,6 +714,7 @@ def getTimeSeriesPlot(ticker_symbol):
 
 
 
+# from https://levelup.gitconnected.com/how-to-format-integers-into-string-representations-in-python-9f6ad0f2d36f
 def safe_num(num):
     if isinstance(num, str):
         num = float(num)
@@ -731,14 +763,10 @@ def make_treemap(fig_tm):
         customdata=customdata,
         hovertemplate="<b>%{customdata[0][1]}</b><br>%{customdata[0][0]} <extra></extra>",
     ))
-    #fig_tm = tidy_plot(fig_tm)
     fig_tm.update_layout(
-        #treemapcolorway = [COLORS[]],
         height=500,
         width=500,
         uniformtext=dict(minsize=12, mode='hide'),
-        #title="SP500 Market Capitalization",
-        #font=({'size':10}),
         treemapcolorway=[
             COLORS["color-yellow"],
             COLORS["color-accent"],
@@ -754,6 +782,7 @@ def make_treemap(fig_tm):
 
 
     return fig_tm
+
 def make_bb_plots(fin_data_, fig_):
 
     bb_cols = ['Close', 'volatility_bbm', 'volatility_bbh', 'volatility_bbl', ]

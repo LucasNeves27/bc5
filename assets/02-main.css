@@ -82,16 +82,21 @@
     background-color: var(--color-accent);
 }
 
-.authors {
+.authors-container {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    align-items: center;
+    justify-content: stretch;
+}
+.authors-container div {
+    flex: 1 1 auto;
 }
 .logo-containers  {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: end;
-    margin-right: 1em;
+    
 }
 .logo-containers img {
     height: 4em;
@@ -100,4 +105,19 @@
     margin: .5em;
     opacity: .8;
 
+}
+
+.authors {
+    text-align: center;
+    padding: 0;
+    margin-top: 1em;
+}
+
+.authors p {
+    margin: 0;
+}
+
+.authors p.footnote{
+    margin-top: 2em ;
+    font-size: 90%;
 }

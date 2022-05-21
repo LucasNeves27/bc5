@@ -51,3 +51,10 @@
     list-style: none;
     padding-left: 0;
 }
+
+ul.sources {
+    margin-top: .5em;
+}
+p.linkstitle {
+    margin-bottom: 0;
+}
