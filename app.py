@@ -35,8 +35,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingRegressor
 
 
-#PROD = True
-PROD = False
+PROD = True
+#PROD = False
 
 TWEETSTOGET = 100
 

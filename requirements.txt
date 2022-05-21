@@ -11,3 +11,4 @@ yfinance
 tweepy
 nltk
 ta
+sklearn
