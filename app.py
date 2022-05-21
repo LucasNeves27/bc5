@@ -285,7 +285,7 @@ app.layout = html.Div([
 
         html.Div([
             html.Div([
-                html.Div([ 
+                html.Div([
                     dcc.Loading(
                         id="loading-timeseries-text",
                         children=[
@@ -294,15 +294,24 @@ app.layout = html.Div([
                             html.P(id='timeseries_longname'),
                         ], className="timeseries_text"),
                     ]),
-                    html.Div([
-                        dcc.Loading(
-                            id="loading-timeseries",
-                            type="default",
-                            children=[dcc.Graph(id='timeseries-dcc', style={'margin': '0'})]
-                        ),
-                        
-                        ], className="timeseries_plot"
-                    ),
+
+                    dcc.Tabs([
+                        dcc.Tab(label='Timeseries', children=[
+                            dcc.Loading(
+                                id="loading-timeseries",
+                                type="default",
+                                children=[dcc.Graph(id='timeseries-dcc')]
+                            ),
+                        ], className="ta-tab", selected_className="ta-tab-selected"),
+                        dcc.Tab(label='Candlestick', children=[
+                            dcc.Loading(
+                                id="loading-candlestick",
+                                type="default",
+                                children=[dcc.Graph(id='candlestick-dcc')]
+                            ),
+                        ], className="ta-tab", selected_className="ta-tab-selected"),
+
+                    ]),
 
                 ], className='col timeseries_container'),
 
@@ -467,6 +476,7 @@ app.layout = html.Div([
 @app.callback(
     Output('timeseries_title', 'children'),
     Output('timeseries-dcc','figure'),
+    Output('candlestick-dcc','figure'),
     Output('techanalysis-dcc','figure'),
     Output('techanalysis-dcc2','figure'),
     Output('techanalysis-dcc3','figure'),
@@ -502,7 +512,9 @@ def getTimeSeriesPlot(ticker_symbol):
     if len(get_info_value(fin_info, 'logo_url')) > 1 :
         logoImg = html.Img(src=get_info_value(fin_info, 'logo_url'))
 
-    
+    ##########################################################
+    ## Make Timeseries Plot
+    ##########################################################
     fig_ts = go.Figure(layout=default_layout)
     fig_ts.add_trace(go.Scatter(x=fin_data.index, y=fin_data['Close'],
                     mode='lines',
@@ -510,11 +522,33 @@ def getTimeSeriesPlot(ticker_symbol):
                     marker=dict(color=COLORS['color-primary'])
                     ))
 
-
-
-
     fig_ts = tidy_plot(fig_ts)
+
+    ##########################################################
+    ## End Timeseries Plot
+    ##########################################################
     
+    ##########################################################
+    ## Make Candlestick Plot
+    ##########################################################
+
+    fig_cs = go.Figure(go.Candlestick(
+        x=fin_data.index,
+        open=fin_data['Open'],
+        high=fin_data['High'],
+        low=fin_data['Low'],
+        close=fin_data['Close'],
+
+    ), layout=default_layout)
+
+    fig_cs = tidy_plot(fig_cs)
+    #fig_cs.update_layout(height=400)
+    fig_cs.update_layout(xaxis_rangeslider_visible=False)
+    fig_cs.update_traces(line={'width':1})
+
+    ##########################################################
+    ## End Candlestick Plot
+    ##########################################################
 
     profile_details = [
             logoImg,
@@ -569,7 +603,7 @@ def getTimeSeriesPlot(ticker_symbol):
         html.Div(tweet_label, className="tweet_sentiment_label")
     ]
     
-    return [ticker_symbol, fig_ts, 
+    return [ticker_symbol, fig_ts, fig_cs,
             fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, 
             longName, profile_details, tweet_faces]
 
