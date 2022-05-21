@@ -160,8 +160,6 @@ def get_tweets(sym):
             for t in tweets:
                 if not "bot" in str.lower(t.author.name) :
                     tweet_list.append(t.full_text)
-            
-            print(tweet_list[:3])
 
             return pd.DataFrame(tweet_list)
         except:
@@ -265,7 +263,8 @@ date_interval = 100
 END_DATE = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
 START_DATE = (datetime.today() + timedelta(days=-date_interval)).strftime('%Y-%m-%d')
 
-
+symbol_opts = pd.read_csv('./data/assets_list.csv')['Symbol'].tolist() + \
+              pd.read_csv('./data/co_assets_list.csv')['Symbol'].tolist()
 
 ###############################################################
 ## Layouts
@@ -284,7 +283,7 @@ default_layout = go.Layout(
 
 dropdown_symbols = dcc.Dropdown(
        id='cc_drop',
-       options=['BTC-USD','ETH-USD', 'WIX', 'GOOG'],
+       options=symbol_opts,
        multi=False,
        value='WIX'
    )
