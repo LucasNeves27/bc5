@@ -27,6 +27,14 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 import warnings
 warnings.filterwarnings('ignore')
 
+
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+from sklearn.feature_selection import SelectKBest, f_regression
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import GradientBoostingRegressor
+
+
 #PROD = True
 PROD = False
 
@@ -71,8 +79,12 @@ TAFEATS = [
     'momentum_rsi', 
     'trend_macd_signal', 'trend_macd_diff', 'trend_macd', 
     'volatility_bbh', 'volatility_bbl', 'volatility_bbm', 
-    'volatility_atr', 'volume_obv'
+    'volatility_atr', 'volume_obv', 'DateCol'
 ]
+
+RANDOM_STATE = 9
+score_func = 'neg_mean_absolute_percentage_error'
+
 ###############################################################
 ## Functions
 ###############################################################
@@ -85,13 +97,33 @@ def get_info_value(info, keyname):
     
     return infoValue
 
+def prep_findata(df_):
+    """
+    Fill nan rows: 
+        Volume = 0
+        Close = ffill
+        Open, High, Low = Close
+    """
+    df_ = df_.reset_index().set_index('Date').asfreq('d')
+    df_['DateCol'] = df_.index
+
+    df_[['Close']] = df_[['Close']].fillna(method='ffill')
+    df_.loc[df_['Open'].isna(), ['Volume']] = 0
+
+    df_['tmp'] = df_['High']
+
+    df_.loc[df_['High'].isna(), ['High']] = df_.loc[df_['tmp'].isna(), 'Close']
+    df_.loc[df_['Open'].isna(), ['Open']] = df_.loc[df_['tmp'].isna(), 'Close']
+    df_.loc[df_['Low'].isna(), ['Low']] = df_.loc[df_['tmp'].isna(), 'Close']
+
+    df_.drop(columns=["tmp","Adj Close"], inplace=True)
+
+    return df_
+
 def get_findata(sym, start_date, end_date):
     if PROD == True:
         df_ = pdr.get_data_yahoo(sym, start=start_date, end=end_date)
-        df_ = df_.reset_index().set_index('Date').asfreq('d')
-        df_['DateCol'] = df_.index
-        df_.fillna(method='ffill', inplace=True)
-
+        df_ = prep_findata(df_)
         json_object = yf.Ticker(sym).info
         return df_, json_object
     else:
@@ -115,11 +147,46 @@ def shift_split_data(df_, target_col, fitsize=7):
     df['Y'] = df[target_col].shift(periods=-1)
     df.rename(columns={'DateCol':'Date_X'}, inplace=True)
     
-    ## last `fitsize` days to fit for prediction on the next day
-    df_fit = df.iloc[-fitsize:]
+    ## last fitsize days to fit for prediction on the next day
+    df_fit = df.iloc[-fitsize-1:]
     
     return df_fit
-    
+
+def make_prediction(df_fit):
+    ## Split X and Y
+    Y = df_fit['Y'][:-1]
+    x_cols = [i for i in df_fit.columns.tolist() if i not in ['Date_X', 'Date_Y', 'Y'] ]
+    X = df_fit[x_cols][:-1]
+    X_predict = df_fit[x_cols][-1:]
+
+    params_gbr = {
+        'gradientboostingregressor__learning_rate': [.05],
+        'gradientboostingregressor__loss': ['quantile'],
+        'gradientboostingregressor__max_depth': [1],
+        'gradientboostingregressor__max_features': ['auto'],
+        'gradientboostingregressor__n_estimators': [50],
+        'selectkbest__k': [14]
+    }
+
+    pipe_gbr = make_pipeline(StandardScaler(),
+                        SelectKBest(f_regression),
+                        GradientBoostingRegressor(random_state=RANDOM_STATE))
+
+
+    # Setting up the grid search
+    gs_gbr = GridSearchCV(pipe_gbr, 
+                        params_gbr, 
+                        n_jobs=-1, 
+                        cv=2,
+                        scoring=score_func,
+                        refit=True
+                        )
+
+    gs_gbr.fit(X, Y)
+    pred = gs_gbr.best_estimator_.predict(X_predict)[0]
+
+    return pred
+
 def tidy_plot(fig_):
     fig_.update_traces(showlegend=False)
     fig_.update_layout(margin = dict(t=0, l=0, r=0, b=0))
@@ -342,10 +409,24 @@ app.layout = html.Div([
                     dcc.Loading(
                         id="loading-timeseries-text",
                         children=[
-                        html.Div([
-                            html.H2(id='timeseries_title'),
-                            html.P(id='timeseries_longname'),
-                        ], className="timeseries_text"),
+                            html.Div([
+                                
+                                html.Div([
+                                    html.H2(id='timeseries_title'),
+                                    html.P(id='timeseries_longname'),
+                                ], className="timeseries_text"),
+                                html.Div([
+                                    html.Div([
+                                        html.Span("Last Close: ", id="lastclose_label"),
+                                        html.Span([], id="lastclose_value"),
+                                    ]),
+                                    html.Div([
+                                        html.Span("Prediction: ", id="prediction_label"),
+                                        html.Span([], id="prediction_value"),
+                                    ]),
+                                ], className="prediction_text"),
+                            
+                            ], className="timeseries_text_container"),
                     ]),
 
                     dcc.Tabs([
@@ -583,6 +664,8 @@ app.layout = html.Div([
     Output('timeseries_longname', 'children'),
     Output('company_profile', 'children'),
     Output('twitter_sentiment', 'children'),
+    Output('prediction_value', 'children'),
+    Output('lastclose_value', 'children'),
 
     Input(dropdown_symbols, 'value')
 )
@@ -709,10 +792,25 @@ def getTimeSeriesPlot(ticker_symbol):
         html.Img(src="./assets/icons/smile.svg", style={'opacity': max(.2,twitter_sentiment_scores['pos'])}),
         html.Div(tweet_label, className="tweet_sentiment_label")
     ]
+
+    ##########################################################
+    ## Make Predictions
+    ##########################################################
+    df_fit = shift_split_data(fin_data_ta,'Close')
+    pred = make_prediction(df_fit)
+    lastclose = fin_data_ta['Close'][-1:].values[0]
+    
+    pred_direction = "pred increase" if pred > lastclose else "pred decrease"
+    pred = '{:.3f}'.format(round(pred,3))
+
+    pred_element = html.Span(pred, className=pred_direction)
+    lastclose_element = html.Span('{:.3f}'.format(round(lastclose,3)))
+        
     
     return [ticker_symbol, fig_ts, fig_cs, fig_tm,
             fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, 
-            longName, profile_details, tweet_faces]
+            longName, profile_details, tweet_faces, 
+            pred_element, lastclose_element]
 
 
 

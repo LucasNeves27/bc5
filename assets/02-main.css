@@ -10,15 +10,35 @@
     min-height: 24em;
 }
 
-.timeseries_container {
-    
+.timeseries_text_container {
+    display: flex;
+    align-items: end;
+    justify-content: end;
+    flex-direction: row;
+    margin-bottom:1em;
+}
+.prediction_text {
+    flex: 1 2 auto;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: start;
 }
 
-.timeseries_text {
+.prediction_text div {
+    min-width: 12em;
     display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    margin-bottom:1em;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+.timeseries_text {
+    flex: 1 1 auto;
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .timeseries_text h2, .timeseries_text p {
@@ -32,6 +52,30 @@
     font-family: var(--font-bold);
 }
 
+#prediction_value,
+#lastclose_value {
+
+}
+
+#prediction_value .pred:before {
+    content: "  ";
+    min-width: 3em;
+    padding-right: .5em;
+}
+#prediction_value .pred.increase:before{
+    content: '\25B2';
+    color: var(--color-success);
+}
+
+#prediction_value .pred.decrease:before{
+    color: var(--color-error);
+    content: '\25BC';
+}
+
+#prediction_label,
+#lastclose_label {
+
+}
 .timeseries_plot {
     flex: 1 0 auto
 }
