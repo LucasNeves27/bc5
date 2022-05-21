@@ -48,9 +48,7 @@ except:
 
 
 external_stylesheets = [
-    'https://fonts.googleapis.com/css2?family=Open+Sans&display=swap',
     'https://fonts.googleapis.com/css2?family=Roboto:wght@400;900&display=swap',
-    'https://fonts.googleapis.com/css2?family=Overlock:wght@900&display=swap',
     'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600&display=swap'
 ]
 
@@ -352,10 +350,8 @@ dropdown_symbols = dcc.Dropdown(
        id='cc_drop',
        options=symbol_opts,
        multi=False,
-       value='WIX'
+       value='GOOG'
    )
-
-
 
 
 
@@ -516,11 +512,9 @@ app.layout = html.Div([
                         ]), ## close dcc.Tabs
                     ], className="tabbed"),
                     
-
                     
                     ######### End Tabbed Area #########
                     
-
 
                 ], className='col'),
 
@@ -550,13 +544,6 @@ app.layout = html.Div([
 
 
         ########## Fourth Row ##########
-
-
-
-
-
-
-
 
 
 
@@ -633,15 +620,8 @@ app.layout = html.Div([
     ], className="row"),
 
 
-
-
     ], className="container"    
     ),
-
-
-
-
-
 
 
 
@@ -677,11 +657,6 @@ def getTimeSeriesPlot(ticker_symbol):
         fin_data, "Open", "High", "Low", "Close", "Volume", fillna=True
     )[TAFEATS]
 
-    ## Split X and Y
-    #split_fin_data = shift_split_data(fin_data, 'Close')
-    #Y = split_fin_data['Close']
-    #x_cols = [i for i in split_fin_data.columns.tolist() if i not in ['Date_X', 'Date_Y', 'Y'] ]
-    #X = split_fin_data[x_cols]
 
     longName = get_info_value(fin_info, 'longName')
     longName = longName if len(longName) > 1 else ticker_symbol
