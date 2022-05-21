@@ -1,6 +1,23 @@
 # [APEX &middot; DASH]
 
+Business Cases with Data Science
+
+Apex Pattern Deployers
+
+- Marjorie Kinney *m20210647*
+
+- Bruno Mendes *m20210627*
+
+- Lucas Neves *m20211020*
+
+- Farina Pontejos *m20210649*
+
+
 ## Introduction
+
+This repository contains the code for Business Casse 5: Cryptocurrency Data Visualization.
+
+The project contains a web app based on the Dash Plotly framework. Users of the dashboard can select a ticker symbol to inspect. This selection determines the plots and visualizations generated and displayed on the dashboard. In addition to the visualization aspect, this app also calculates a prediction for the closing price of the selected asset for the next day.
 
 ## Instructions for deployment
 
