@@ -503,7 +503,10 @@ app.layout = html.Div([
 
 
             html.H3("Twitter Sentiment", className="caption"),
-            html.Div([], id="twitter_sentiment", className="sentiment-container card"),
+                dcc.Loading(children=[
+                    html.Div(id="twitter_sentiment", className="sentiment-container card"),
+                ], type="default"),
+
 
         ################### References ###################
         html.H3("External Links", className="caption"),
