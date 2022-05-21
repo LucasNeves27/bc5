@@ -18,7 +18,7 @@ __pycache__/
 # Ignored by the build system
 /setup.cfg
 
-twitter.csv
+# twitter.csv
 /presentation
 /report
 /wip
