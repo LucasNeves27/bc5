@@ -8,6 +8,7 @@ import pandas as pd
 from datetime import timedelta, datetime
 
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 
 import json
 import re
@@ -203,6 +204,59 @@ def get_tweets_sentiment(sym):
 
     return scores
 
+def get_sp10():
+    sp10 = pd.read_csv('./data/marketcap.csv')
+    sp10 = sp10.sort_values(by='MarketCap', ascending=False).reset_index(drop=True)
+
+    sp10_list = sp10[0:10]['Symbol'].tolist()
+    today = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
+    prevmonth = (datetime.today() + timedelta(days=-30)).strftime('%Y-%m-%d')
+
+    if PROD == True:
+        sp10_prices = pdr.get_data_yahoo(sp10_list[0], start=prevmonth, end=today)[['Close']].rename(columns={'Close':sp10_list[0]})
+
+        for i in sp10_list[1:]:
+            sp10_prices[i] = pdr.get_data_yahoo(i, start=prevmonth, end=today)[['Close']].rename(columns={'Close':i})
+        return sp10_prices
+    
+    else: 
+        sp10_prices = pd.read_csv('./data/sp10prices.csv').set_index('Date')
+        return sp10_prices
+
+
+def make_sparklines():
+
+    sp10_prices = get_sp10()
+
+    fig_sub = make_subplots(rows=10, cols=1, 
+                        shared_xaxes=True,
+                        vertical_spacing=0.02)
+
+    for i in range(len(sp10_prices.columns.tolist())):
+        sym_i = sp10_prices.columns.tolist()[i]
+        
+        fig_sub.append_trace(go.Scatter(
+            y=sp10_prices.iloc[:,i],
+            x=sp10_prices.index,
+            name=sym_i
+        ), row=i+1, col=1)
+        fig_sub.update_yaxes(row=i+1, col=1, showticklabels=False)
+        
+    fig_sub.update_layout(
+        paper_bgcolor=COLORS['bg-color'],
+        plot_bgcolor=COLORS['bg-color'],
+        font_color=COLORS['font-color'],
+        )
+    fig_sub.update_layout(height=500, width=300, showlegend=True,)
+    fig_sub.update_layout(margin = dict(t=30, l=0, r=0, b=0),) 
+    fig_sub.update_layout(title_text="30-Day Performance of Top 10 Assets",
+                        font=dict(
+                            size=10,
+                        ))
+    fig_sub.update_yaxes(showgrid=False)
+    fig_sub.update_xaxes(showgrid=False)
+
+    return fig_sub
 ###############################################################
 ## Wrangle the data
 ###############################################################
@@ -393,10 +447,24 @@ app.layout = html.Div([
             ], className='row row-2'),
 
         ], className='card'),
-
-
-
+        
         ########## Third Row ##########
+        
+        html.H3("Market Performance", className="caption"),
+        
+        html.Div([
+            html.Div([
+                html.Div([
+                    dcc.Graph(id='treemap-dcc'),
+                ], className="col"),
+                html.Div([
+                    dcc.Graph(figure=make_sparklines()),
+                ], className="col"),
+            ], className='row'),
+        ], className="card"),
+
+
+        ########## Fourth Row ##########
 
         ################### References ###################
         html.Div([
@@ -477,6 +545,7 @@ app.layout = html.Div([
     Output('timeseries_title', 'children'),
     Output('timeseries-dcc','figure'),
     Output('candlestick-dcc','figure'),
+    Output('treemap-dcc','figure'),
     Output('techanalysis-dcc','figure'),
     Output('techanalysis-dcc2','figure'),
     Output('techanalysis-dcc3','figure'),
@@ -584,6 +653,11 @@ def getTimeSeriesPlot(ticker_symbol):
     fig_dcc5 = go.Figure(layout=default_layout)
     fig_dcc5 = make_obv_plots(fin_data_ta, fig_dcc5)
 
+
+    fig_tm = go.Figure(layout=default_layout)
+    fig_tm = make_treemap(fig_tm)
+
+
     ##########################################################
     ## Get Tweets Sentiment
     ##########################################################
@@ -603,10 +677,83 @@ def getTimeSeriesPlot(ticker_symbol):
         html.Div(tweet_label, className="tweet_sentiment_label")
     ]
     
-    return [ticker_symbol, fig_ts, fig_cs,
+    return [ticker_symbol, fig_ts, fig_cs, fig_tm,
             fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, 
             longName, profile_details, tweet_faces]
 
+
+
+def safe_num(num):
+    if isinstance(num, str):
+        num = float(num)
+    return float('{:.3g}'.format(abs(num)))
+
+def format_number(num):
+    num = safe_num(num)
+    sign = ''
+
+    metric = {'T': 1000000000000, 'B': 1000000000, 'M': 1000000, 'K': 1000, '': 1}
+
+    for index in metric:
+        num_check = num / metric[index]
+
+        if(num_check >= 1):
+            num = num_check
+            sign = index
+            break
+    if num == 0:
+        return ""
+    else:
+        return f"{str(num).rstrip('0').rstrip('.')} {sign}"
+
+def make_treemap(fig_tm):
+    sp500 = pd.read_csv('./data/marketcap.csv')
+    sp500_sectors = sp500.groupby(['Sector']).sum().reset_index()
+    sp500_sectors[['Text']] = sp500_sectors[['MarketCap']]
+    sp500_sectors[['MarketCap']] = 0
+    sp500_sectors['Symbol'] = sp500_sectors['Sector']
+    sp500_sectors['Name'] = sp500_sectors['Sector']
+    sp500_sectors.drop(columns=['Sector'], inplace=True)
+    sp500_sectors['Sector'] = "SP500"
+    sp500['Text'] = sp500['MarketCap']
+
+    sp500_tree = pd.concat([sp500_sectors, sp500.loc[sp500['MarketCap']>0,['Sector','MarketCap','Symbol','Name', 'Text']]]).reset_index(drop=True)
+    sp500_tree.rename(columns={'Sector':'Parent', 'Symbol':"Label"}, inplace=True)
+    sp500_tree['Text'] = sp500_tree['Text'].apply(format_number)
+    sp500_tree_ = pd.concat([pd.DataFrame([[0, "", "SP500","SP500",""]], columns=sp500_tree.columns),sp500_tree])
+
+    customdata = np.dstack((sp500_tree_[['Text']],sp500_tree_[['Name']]))
+
+    fig_tm.add_trace(go.Treemap(
+        labels = sp500_tree_['Label'],
+        parents = sp500_tree_['Parent'],
+        values=sp500_tree_['MarketCap'],
+        customdata=customdata,
+        hovertemplate="<b>%{customdata[0][1]}</b><br>%{customdata[0][0]} <extra></extra>",
+    ))
+    #fig_tm = tidy_plot(fig_tm)
+    fig_tm.update_layout(
+        #treemapcolorway = [COLORS[]],
+        height=500,
+        width=500,
+        uniformtext=dict(minsize=12, mode='hide'),
+        #title="SP500 Market Capitalization",
+        #font=({'size':10}),
+        treemapcolorway=[
+            COLORS["color-yellow"],
+            COLORS["color-accent"],
+            COLORS["color-orange"],
+            COLORS["color-lime"],
+            COLORS["color-primary"],
+            COLORS["color-green"],
+        ]
+    )
+    fig_tm.update_layout(margin = dict(t=10, l=0, r=0, b=0))
+
+
+
+
+    return fig_tm
 def make_bb_plots(fin_data_, fig_):
 
     bb_cols = ['Close', 'volatility_bbm', 'volatility_bbh', 'volatility_bbl', ]
