@@ -769,17 +769,17 @@ def getTimeSeriesPlot(ticker_symbol):
     tweet_faces = [
         html.Div([
             html.Img(src="./assets/icons/frown.svg", style={'opacity': max(.2,tw_pos)}),
-            html.Div(str(int(100*tw_neg))+" %", ),
+            html.Div(str(int(100*tw_neg))+"%", ),
         ], className="tweet_sentiment_result"),
 
         html.Div([
             html.Img(src="./assets/icons/meh.svg", style={'opacity': max(.2,tw_neu)}),
-            html.Div(str(int(100*tw_neu))+" %", ),
+            html.Div(str(int(100*tw_neu))+"%", ),
         ], className="tweet_sentiment_result"),
 
         html.Div([
             html.Img(src="./assets/icons/smile.svg", style={'opacity': max(.2,tw_pos)}),
-            html.Div(str(int(100*tw_pos))+" %", ),
+            html.Div(str(int(100*tw_pos))+"%", ),
         ], className="tweet_sentiment_result"),
 
         html.Div(tweet_label, className="tweet_sentiment_label")
