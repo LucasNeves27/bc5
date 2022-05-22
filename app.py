@@ -138,7 +138,7 @@ def get_findata(sym, start_date, end_date):
         return df_, json_object
 
 
-def shift_split_data(df_, target_col, fitsize=7):
+def shift_split_data(df_, target_col, fitsize=30):
     df = df_.copy()
     ## Date_Y is the date being predicted
     ## The corresponding Date_X of the same row is the previous date
@@ -171,12 +171,12 @@ def make_prediction(df_fit):
                         SelectKBest(f_regression),
                         GradientBoostingRegressor(random_state=RANDOM_STATE))
 
-
+    tscv = TimeSeriesSplit(n_splits=10, max_train_size=7, test_size=1)
     # Setting up the grid search
     gs_gbr = GridSearchCV(pipe_gbr, 
                         params_gbr, 
                         n_jobs=-1, 
-                        cv=2,
+                        cv=tscv,
                         scoring=score_func,
                         refit=True
                         )
@@ -762,10 +762,26 @@ def getTimeSeriesPlot(ticker_symbol):
     else:
         tweet_label = 'Positive'
 
+    tw_neg = round(twitter_sentiment_scores['neg'],2)
+    tw_neu = round(twitter_sentiment_scores['neu'],2)
+    tw_pos = round(twitter_sentiment_scores['pos'],2)
+
     tweet_faces = [
-        html.Img(src="./assets/icons/frown.svg", style={'opacity': max(.2,twitter_sentiment_scores['neg'])}),
-        html.Img(src="./assets/icons/meh.svg", style={'opacity': max(.2,twitter_sentiment_scores['neu'])}),
-        html.Img(src="./assets/icons/smile.svg", style={'opacity': max(.2,twitter_sentiment_scores['pos'])}),
+        html.Div([
+            html.Img(src="./assets/icons/frown.svg", style={'opacity': max(.2,tw_pos)}),
+            html.Div(str(int(100*tw_neg))+" %", ),
+        ], className="tweet_sentiment_result"),
+
+        html.Div([
+            html.Img(src="./assets/icons/meh.svg", style={'opacity': max(.2,tw_neu)}),
+            html.Div(str(int(100*tw_neu))+" %", ),
+        ], className="tweet_sentiment_result"),
+
+        html.Div([
+            html.Img(src="./assets/icons/smile.svg", style={'opacity': max(.2,tw_pos)}),
+            html.Div(str(int(100*tw_pos))+" %", ),
+        ], className="tweet_sentiment_result"),
+
         html.Div(tweet_label, className="tweet_sentiment_label")
     ]
 
