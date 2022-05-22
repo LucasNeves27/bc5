@@ -88,6 +88,13 @@ score_func = 'neg_mean_absolute_percentage_error'
 ## Functions
 ###############################################################
 
+def get_app_version():
+    try:
+        v = os.environ['CURRENT_VERSION_ID']
+        return html.P(v)
+    except:
+        return html.P("development")
+    
 
 def get_info_value(info, keyname):
     infoValue = "" 
@@ -596,20 +603,23 @@ app.layout = html.Div([
         html.Div([
             html.Div([
                 html.Div([
-                    
+                    html.H4("Apex Pattern Deployers"),
+                ], className='apex-container'),
+                html.Div([
+                    html.Img(src="/assets/logo-branco.png"),
                     html.Div([
-                        html.Img(src="/assets/logo-branco.png"),
-                        html.Img(src="/assets/logo.png"),
-                    ], className='logo-containers'),
-                    html.Div([
-                        html.H4("Apex Pattern Deployers"),
-                        html.P("Kinney · Mendes"), 
-                        html.P("Neves · Pontejos"),
-                        html.P(html.Em("We are not financial advisors and this is not financial advise."), className="footnote"),
-                    ], className="authors",), 
-                ], className='col authors-container'),
+                        html.Span("Kinney · Mendes"), 
+                        html.Span("Neves · Pontejos"),
+                    ], className="author-names"),
+                ], className="authors",), 
+                html.Div(html.Em("We are not financial advisors and this is not financial advise."), className="footnote"),
+                html.Div([
+                    html.Img(src="/assets/logo.png"),
+                    html.Div(get_app_version(), className="app-version"),
+                ], className="app-details"),
+            ], className='authors-container'),
 
-            ], className='row'),    
+
         ], className='card'),
 
 

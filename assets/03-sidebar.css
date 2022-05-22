@@ -68,3 +68,43 @@ ul.sources {
 p.linkstitle {
     margin-bottom: 0;
 }
+
+.authors-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.authors {
+    display: flex;
+    flex-direction: row;
+    width: auto;
+    flex: 1 0 auto;
+}
+
+.authors img {
+    max-width: 3em;
+    display: flex;
+    flex: 1 0 auto;
+}
+
+.author-names {
+    display: flex;
+    flex-direction: column;
+    margin-left: 1em;
+}
+.footnote {
+    
+    margin:2em 0;
+}
+
+
+.app-details img {
+    max-width: 4em;
+
+}
+
+.app-details .app-version {
+    font-family: var(--font-bold);
+    text-transform: uppercase;
+}
