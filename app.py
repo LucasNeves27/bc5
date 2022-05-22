@@ -35,9 +35,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingRegressor
 
 
-PROD = True
-#PROD = False
+#PROD = True
+PROD = False
 
+ENABLETWEETS = True
 TWEETSTOGET = 100
 
 try:
@@ -205,7 +206,7 @@ def get_tweets(sym):
     accessToken = ""
     accessTokenSecret = ""
     
-    if PROD == True:
+    if (PROD == True) and (ENABLETWEETS == True):
         tk = pd.read_csv('./twitter.csv')
         apiKey = tk.loc[tk['label']=='api']['key'].values[0]
         apiSecret = tk.loc[tk['label']=='apisecret']['key'].values[0]
