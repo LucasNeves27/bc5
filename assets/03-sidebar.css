@@ -107,4 +107,9 @@ p.linkstitle {
 .app-details .app-version {
     font-family: var(--font-bold);
     text-transform: uppercase;
+    font-size: 80%;
+}
+
+.app-details .app-version:before {
+    content: "app-ver:"
 }
