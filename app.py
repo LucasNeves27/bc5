@@ -34,12 +34,23 @@ from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingRegressor
 
+###############################################################
+## Some constant vars
+###############################################################
 
-#PROD = True
-PROD = False
+date_interval = 365
+END_DATE = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
+START_DATE = (datetime.today() + timedelta(days=-date_interval)).strftime('%Y-%m-%d')
+
+symbol_opts = pd.read_csv('./data/assets_list.csv')['Symbol'].tolist() + \
+              pd.read_csv('./data/co_assets_list.csv')['Symbol'].tolist()
+
+
+PROD = True
+#PROD = False
 
 ENABLETWEETS = True
-TWEETSTOGET = 100
+TWEETSTOGET = 500
 
 try:
     nltk.data.find('vader_lexicon')
@@ -90,7 +101,7 @@ score_func = 'neg_mean_absolute_percentage_error'
 
 def get_app_version():
     try:
-        v = os.environ['CURRENT_VERSION_ID']
+        v = os.environ['GAE_VERSION']
         return html.P(v)
     except:
         return html.P("development")
@@ -328,16 +339,6 @@ def make_sparklines():
     fig_sub.update_xaxes(showgrid=False)
 
     return fig_sub
-###############################################################
-## Wrangle the data
-###############################################################
-
-date_interval = 100
-END_DATE = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
-START_DATE = (datetime.today() + timedelta(days=-date_interval)).strftime('%Y-%m-%d')
-
-symbol_opts = pd.read_csv('./data/assets_list.csv')['Symbol'].tolist() + \
-              pd.read_csv('./data/co_assets_list.csv')['Symbol'].tolist()
 
 ###############################################################
 ## Layouts
