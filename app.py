@@ -54,7 +54,7 @@ TWEETSTOGET = 500
 
 try:
     nltk.data.find('vader_lexicon')
-    #/vader_lexicon/vader_lexicon.txt
+    
 except:
     nltk.download('vader_lexicon')
 
@@ -437,6 +437,28 @@ def make_ta_plots(data_, fig_, cols_, colors_, plot_opts):
                     ))
     return fig_
 
+def get_sp10():
+    """
+    Fetch the 30-day data for the top 10 assets by marketcap if PROD==True
+    otherwise retrieve local sample data.
+    """
+    sp10 = pd.read_csv('./data/marketcap.csv')
+    sp10 = sp10.sort_values(by='MarketCap', ascending=False).reset_index(drop=True)
+
+    sp10_list = sp10[0:10]['Symbol'].tolist()
+    today = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
+    prevmonth = (datetime.today() + timedelta(days=-30)).strftime('%Y-%m-%d')
+
+    if PROD == True:
+        sp10_prices = pdr.get_data_yahoo(sp10_list[0], start=prevmonth, end=today)[['Close']].rename(columns={'Close':sp10_list[0]})
+
+        for i in sp10_list[1:]:
+            sp10_prices[i] = pdr.get_data_yahoo(i, start=prevmonth, end=today)[['Close']].rename(columns={'Close':i})
+        return sp10_prices
+    
+    else: 
+        sp10_prices = pd.read_csv('./data/sp10prices.csv').set_index('Date')
+        return sp10_prices
 
 
 ###########################
@@ -515,6 +537,7 @@ def get_tweets_sentiment(sym):
 
     tweets.columns = ["tweets"]
     tweets["tweets"] = tweets["tweets"].apply(clean_text)
+    
     res = pd.DataFrame(tweets['tweets'].apply(lambda x: get_sentiment(x))) 
     res = res.apply(lambda row: row['tweets'], axis=1, result_type='expand').rename(columns={0:'neg', 1:'neu', 2:'pos'})
     scores = {'neg': res.mean()['neg'], 'neu': res.mean()['neu'], 'pos': res.mean()['pos'] }
@@ -522,28 +545,6 @@ def get_tweets_sentiment(sym):
 
     return scores
 
-def get_sp10():
-    """
-    Fetch the 30-day data for the top 10 assets by marketcap if PROD==True
-    otherwise retrieve local sample data.
-    """
-    sp10 = pd.read_csv('./data/marketcap.csv')
-    sp10 = sp10.sort_values(by='MarketCap', ascending=False).reset_index(drop=True)
-
-    sp10_list = sp10[0:10]['Symbol'].tolist()
-    today = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
-    prevmonth = (datetime.today() + timedelta(days=-30)).strftime('%Y-%m-%d')
-
-    if PROD == True:
-        sp10_prices = pdr.get_data_yahoo(sp10_list[0], start=prevmonth, end=today)[['Close']].rename(columns={'Close':sp10_list[0]})
-
-        for i in sp10_list[1:]:
-            sp10_prices[i] = pdr.get_data_yahoo(i, start=prevmonth, end=today)[['Close']].rename(columns={'Close':i})
-        return sp10_prices
-    
-    else: 
-        sp10_prices = pd.read_csv('./data/sp10prices.csv').set_index('Date')
-        return sp10_prices
 
 
 ###############################################################
