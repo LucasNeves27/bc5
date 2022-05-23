@@ -106,8 +106,14 @@ def get_app_version():
     except:
         return html.P("development")
     
-
+###############################################################
+## Utility Functions for dealing with data
+###############################################################
 def get_info_value(info, keyname):
+    """
+    Check whether key exists in Ticker.info and only access if it does; 
+    otherwise return empty string.
+    """
     infoValue = "" 
     if keyname in info.keys():
         infoValue = info[keyname] 
@@ -138,6 +144,10 @@ def prep_findata(df_):
     return df_
 
 def get_findata(sym, start_date, end_date):
+    """
+    Returns Ticker.info if PROD==True, 
+    otherwise return local sample info.json file
+    """
     if PROD == True:
         df_ = pdr.get_data_yahoo(sym, start=start_date, end=end_date)
         df_ = prep_findata(df_)
@@ -156,7 +166,44 @@ def get_findata(sym, start_date, end_date):
         return df_, json_object
 
 
+
+
+# from https://levelup.gitconnected.com/how-to-format-integers-into-string-representations-in-python-9f6ad0f2d36f
+def safe_num(num):
+    if isinstance(num, str):
+        num = float(num)
+    return float('{:.3g}'.format(abs(num)))
+
+# also from https://levelup.gitconnected.com/how-to-format-integers-into-string-representations-in-python-9f6ad0f2d36f
+def format_number(num):
+    num = safe_num(num)
+    sign = ''
+
+    metric = {'T': 1000000000000, 'B': 1000000000, 'M': 1000000, 'K': 1000, '': 1}
+
+    for index in metric:
+        num_check = num / metric[index]
+
+        if(num_check >= 1):
+            num = num_check
+            sign = index
+            break
+    if num == 0:
+        return ""
+    else:
+        return f"{str(num).rstrip('0').rstrip('.')} {sign}"
+
+
+###############################################################
+## Apply model
+###############################################################
+
+
 def shift_split_data(df_, target_col, fitsize=30):
+    """
+    Shifts the "Y" column so that the X columns correspond
+    to the next day Y as prediction.
+    """
     df = df_.copy()
     ## Date_Y is the date being predicted
     ## The corresponding Date_X of the same row is the previous date
@@ -170,6 +217,11 @@ def shift_split_data(df_, target_col, fitsize=30):
     return df_fit
 
 def make_prediction(df_fit):
+    """
+    Apply ML model to predict. 
+    Use GridSearch so we can retrieve a MAPE score if necessary,
+    but use previously obtained hyperparameters
+    """
     ## Split X and Y
     Y = df_fit['Y'][:-1]
     x_cols = [i for i in df_fit.columns.tolist() if i not in ['Date_X', 'Date_Y', 'Y'] ]
@@ -204,7 +256,13 @@ def make_prediction(df_fit):
 
     return pred
 
+###############################################################
+## Utility Functions for dealing with plots
+###############################################################
 def tidy_plot(fig_):
+    """
+    Apply some default aesthetics to plots
+    """
     fig_.update_traces(showlegend=False)
     fig_.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     fig_.update_yaxes(gridcolor=COLORS['color-darkGrey'])
@@ -214,100 +272,11 @@ def tidy_plot(fig_):
     fig_.update_yaxes(zerolinewidth=1, zerolinecolor='rgba(255,255,255,.5)')
     return fig_
 
-###########################
-## Sentiment Analysis
-###########################
-
-def get_tweets(sym):
-    apiKey = ""
-    apiSecret = ""
-    accessToken = ""
-    accessTokenSecret = ""
-    
-    if (PROD == True) and (ENABLETWEETS == True):
-        tk = pd.read_csv('./twitter.csv')
-        apiKey = tk.loc[tk['label']=='api']['key'].values[0]
-        apiSecret = tk.loc[tk['label']=='apisecret']['key'].values[0]
-        accessToken = tk.loc[tk['label']=='accesstoken']['key'].values[0]
-        accessTokenSecret = tk.loc[tk['label']=='accesstokensecret']['key'].values[0]
-        
-        tweet_list = []
-
-        try:
-
-            auth = tweepy.OAuthHandler(apiKey, apiSecret)
-            auth.set_access_token(accessToken, accessTokenSecret)
-            api = tweepy.API(auth)
-
-
-            tweets = tweepy.Cursor(api.search_tweets, q=sym, tweet_mode='extended', lang='en').items(TWEETSTOGET)
-            for t in tweets:
-                if not "bot" in str.lower(t.author.name) :
-                    tweet_list.append(t.full_text)
-
-            return pd.DataFrame(tweet_list)
-        except:
-            pass
-    else:
-        return pd.read_csv('./data/tweet_sample.csv')
-
-
-
-def get_sentiment(s):
-    sia = SentimentIntensityAnalyzer()
-    scores = sia.polarity_scores(s)
-    neg = scores['neg']
-    neu = scores['neu']
-    pos = scores['pos']
-    
-    return [neg, neu, pos]
-
-def clean_text(txt):
-    txt = re.sub(r"RT[\s]+", "", txt)
-    txt = txt.replace("\n", " ")
-    txt = re.sub(" +", " ", txt)
-    txt = re.sub(r"https?:\/\/\S+", "", txt)
-    txt = re.sub(r"(@[A-Za-z0–9_]+)|[^\w\s]|#", "", txt)
-    #txt = emoji.replace_emoji(txt, replace='')
-    txt.strip()
-    return txt
-
-def get_tweets_sentiment(sym):
-
-    
-    tweets = get_tweets(sym)
-
-    tweets.columns = ["tweets"]
-    tweets["tweets"] = tweets["tweets"].apply(clean_text)
-    res = pd.DataFrame(tweets['tweets'].apply(lambda x: get_sentiment(x))) 
-    res = res.apply(lambda row: row['tweets'], axis=1, result_type='expand').rename(columns={0:'neg', 1:'neu', 2:'pos'})
-    scores = {'neg': res.mean()['neg'], 'neu': res.mean()['neu'], 'pos': res.mean()['pos'] }
-    
-
-    return scores
-
-def get_sp10():
-    sp10 = pd.read_csv('./data/marketcap.csv')
-    sp10 = sp10.sort_values(by='MarketCap', ascending=False).reset_index(drop=True)
-
-    sp10_list = sp10[0:10]['Symbol'].tolist()
-    today = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
-    prevmonth = (datetime.today() + timedelta(days=-30)).strftime('%Y-%m-%d')
-
-    if PROD == True:
-        sp10_prices = pdr.get_data_yahoo(sp10_list[0], start=prevmonth, end=today)[['Close']].rename(columns={'Close':sp10_list[0]})
-
-        for i in sp10_list[1:]:
-            sp10_prices[i] = pdr.get_data_yahoo(i, start=prevmonth, end=today)[['Close']].rename(columns={'Close':i})
-        return sp10_prices
-    
-    else: 
-        sp10_prices = pd.read_csv('./data/sp10prices.csv').set_index('Date')
-        return sp10_prices
-
 
 def make_sparklines():
-
+    """
+    Render the 10 sparklines 
+    """
     sp10_prices = get_sp10()
 
     fig_sub = make_subplots(rows=10, cols=1, 
@@ -339,6 +308,243 @@ def make_sparklines():
     fig_sub.update_xaxes(showgrid=False)
 
     return fig_sub
+
+
+def make_treemap(fig_tm):
+    sp500 = pd.read_csv('./data/marketcap.csv')
+    sp500_sectors = sp500.groupby(['Sector']).sum().reset_index()
+    sp500_sectors[['Text']] = sp500_sectors[['MarketCap']]
+    sp500_sectors[['MarketCap']] = 0
+    sp500_sectors['Symbol'] = sp500_sectors['Sector']
+    sp500_sectors['Name'] = sp500_sectors['Sector']
+    sp500_sectors.drop(columns=['Sector'], inplace=True)
+    sp500_sectors['Sector'] = "SP500"
+    sp500['Text'] = sp500['MarketCap']
+
+    sp500_tree = pd.concat([sp500_sectors, sp500.loc[sp500['MarketCap']>0,['Sector','MarketCap','Symbol','Name', 'Text']]]).reset_index(drop=True)
+    sp500_tree.rename(columns={'Sector':'Parent', 'Symbol':"Label"}, inplace=True)
+    sp500_tree['Text'] = sp500_tree['Text'].apply(format_number)
+    sp500_tree_ = pd.concat([pd.DataFrame([[0, "", "SP500","SP500",""]], columns=sp500_tree.columns),sp500_tree])
+
+    customdata = np.dstack((sp500_tree_[['Text']],sp500_tree_[['Name']]))
+
+    fig_tm.add_trace(go.Treemap(
+        labels = sp500_tree_['Label'],
+        parents = sp500_tree_['Parent'],
+        values=sp500_tree_['MarketCap'],
+        customdata=customdata,
+        hovertemplate="<b>%{customdata[0][1]}</b><br>%{customdata[0][0]} <extra></extra>",
+    ))
+    fig_tm.update_layout(
+        height=500,
+        width=500,
+        uniformtext=dict(minsize=12, mode='hide'),
+        treemapcolorway=[
+            COLORS["color-yellow"],
+            COLORS["color-accent"],
+            COLORS["color-orange"],
+            COLORS["color-lime"],
+            COLORS["color-primary"],
+            COLORS["color-green"],
+        ]
+    )
+    fig_tm.update_layout(margin = dict(t=10, l=0, r=0, b=0))
+
+
+
+
+    return fig_tm
+
+def make_bb_plots(fin_data_, fig_):
+
+    bb_cols = ['Close', 'volatility_bbm', 'volatility_bbh', 'volatility_bbl', ]
+    bb_colors = [COLORS['color-primary'], COLORS['color-red'], COLORS['color-yellow'], COLORS['color-yellow'], ]
+    plot_opts = [{'line_width': 1},
+                 {'line_width': 1},
+                 {'line_width': 1, 'line_dash':"dot"},
+                 {'line_width': 1,'line_dash':"dot"},
+                 ]
+    make_ta_plots(fin_data_, fig_, bb_cols, bb_colors, plot_opts)
+    
+    fig_ = tidy_plot(fig_)
+    fig_.update_traces(showlegend=True)
+    fig_.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="left",
+        x=0
+    ))
+
+    return fig_
+
+def make_macd_plots(fin_data_, fig_):
+    macd_cols = ['trend_macd_diff', 'trend_macd', 'trend_macd_signal']
+    macd_colors = [ COLORS['color-lime'], COLORS['color-orange'], COLORS['color-yellow']]
+    plot_opts = [{'line_width': 1, 'line_dash':"dot"}, 
+                 {'line_width': 1, 'line_dash':"dot"}, 
+                 {'line_width': 1, }]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+
+    fig_.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor='rgba(255,255,255,.5)')
+    fig_ = tidy_plot(fig_)
+    fig_.update_traces(showlegend=True)
+    fig_.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="left",
+        x=0
+    ))
+    return fig_
+
+def make_rsi_plots(fin_data_, fig_):
+    macd_cols = ['momentum_rsi',]
+    macd_colors = [ COLORS['color-orange'], ]
+    plot_opts = [{'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+    fig_ = tidy_plot(fig_)
+
+    return fig_
+
+
+def make_obv_plots(fin_data_, fig_):
+    macd_cols = ['volume_obv',]
+    macd_colors = [ COLORS['color-orange'], ]
+    plot_opts = [{'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+    fig_ = tidy_plot(fig_)
+
+    return fig_
+
+def make_vol_plots(fin_data_, fig_):
+    macd_cols = ['volatility_atr',]
+    macd_colors = [ COLORS['color-orange'], ]
+    plot_opts = [{'line_width': 1}]
+    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
+    fig_ = tidy_plot(fig_)
+
+    return fig_
+
+def make_ta_plots(data_, fig_, cols_, colors_, plot_opts):
+
+    for i in range(len(cols_)):
+        fig_.add_trace(go.Scatter(x=data_.index, y=data_[cols_[i]],
+                    mode='lines',
+                    marker=dict(color=colors_[i]),
+                    name=str.upper(str.replace(cols_[i], "_", " ")),
+                    **plot_opts[i]
+                    ))
+    return fig_
+
+
+
+###########################
+## Sentiment Analysis
+###########################
+
+def get_tweets(sym):
+    """
+    Fetch tweets from Twitter API if PROD==True, and ENABLETWEETS==True
+    otherwise retrieve from local sample twitter file
+    """
+    apiKey = ""
+    apiSecret = ""
+    accessToken = ""
+    accessTokenSecret = ""
+    
+    if (PROD == True) and (ENABLETWEETS == True):
+        tk = pd.read_csv('./twitter.csv')
+        apiKey = tk.loc[tk['label']=='api']['key'].values[0]
+        apiSecret = tk.loc[tk['label']=='apisecret']['key'].values[0]
+        accessToken = tk.loc[tk['label']=='accesstoken']['key'].values[0]
+        accessTokenSecret = tk.loc[tk['label']=='accesstokensecret']['key'].values[0]
+        
+        tweet_list = []
+
+        try:
+            auth = tweepy.OAuthHandler(apiKey, apiSecret)
+            auth.set_access_token(accessToken, accessTokenSecret)
+            api = tweepy.API(auth)
+
+            tweets = tweepy.Cursor(api.search_tweets, q=sym, tweet_mode='extended', lang='en').items(TWEETSTOGET)
+            for t in tweets:
+                if not "bot" in str.lower(t.author.name) :
+                    tweet_list.append(t.full_text)
+
+            return pd.DataFrame(tweet_list)
+        except:
+            pass
+    else:
+        return pd.read_csv('./data/tweet_sample.csv')
+
+
+
+def get_sentiment(s):
+    """
+    Return Sentiment scores
+    """
+    sia = SentimentIntensityAnalyzer()
+    scores = sia.polarity_scores(s)
+    neg = scores['neg']
+    neu = scores['neu']
+    pos = scores['pos']
+    
+    return [neg, neu, pos]
+
+def clean_text(txt):
+    """
+    Perform basic text processing
+    """
+    txt = re.sub(r"RT[\s]+", "", txt)
+    txt = txt.replace("\n", " ")
+    txt = re.sub(" +", " ", txt)
+    txt = re.sub(r"https?:\/\/\S+", "", txt)
+    txt = re.sub(r"(@[A-Za-z0–9_]+)|[^\w\s]|#", "", txt)
+    #txt = emoji.replace_emoji(txt, replace='')
+    txt.strip()
+    return txt
+
+def get_tweets_sentiment(sym):
+    """
+    Calculates the sentiment of each tweet retrieved. 
+    Returns scores.
+    """
+
+    tweets = get_tweets(sym)
+
+    tweets.columns = ["tweets"]
+    tweets["tweets"] = tweets["tweets"].apply(clean_text)
+    res = pd.DataFrame(tweets['tweets'].apply(lambda x: get_sentiment(x))) 
+    res = res.apply(lambda row: row['tweets'], axis=1, result_type='expand').rename(columns={0:'neg', 1:'neu', 2:'pos'})
+    scores = {'neg': res.mean()['neg'], 'neu': res.mean()['neu'], 'pos': res.mean()['pos'] }
+    
+
+    return scores
+
+def get_sp10():
+    """
+    Fetch the 30-day data for the top 10 assets by marketcap if PROD==True
+    otherwise retrieve local sample data.
+    """
+    sp10 = pd.read_csv('./data/marketcap.csv')
+    sp10 = sp10.sort_values(by='MarketCap', ascending=False).reset_index(drop=True)
+
+    sp10_list = sp10[0:10]['Symbol'].tolist()
+    today = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
+    prevmonth = (datetime.today() + timedelta(days=-30)).strftime('%Y-%m-%d')
+
+    if PROD == True:
+        sp10_prices = pdr.get_data_yahoo(sp10_list[0], start=prevmonth, end=today)[['Close']].rename(columns={'Close':sp10_list[0]})
+
+        for i in sp10_list[1:]:
+            sp10_prices[i] = pdr.get_data_yahoo(i, start=prevmonth, end=today)[['Close']].rename(columns={'Close':i})
+        return sp10_prices
+    
+    else: 
+        sp10_prices = pd.read_csv('./data/sp10prices.csv').set_index('Date')
+        return sp10_prices
+
 
 ###############################################################
 ## Layouts
@@ -550,10 +756,6 @@ app.layout = html.Div([
                 ], className="col"),
             ], className='row'),
         ], className="card"),
-
-
-        ########## Fourth Row ##########
-
 
 
     ], className="col-9 main"),
@@ -815,157 +1017,6 @@ def getTimeSeriesPlot(ticker_symbol):
             longName, profile_details, tweet_faces, 
             pred_element, lastclose_element]
 
-
-
-# from https://levelup.gitconnected.com/how-to-format-integers-into-string-representations-in-python-9f6ad0f2d36f
-def safe_num(num):
-    if isinstance(num, str):
-        num = float(num)
-    return float('{:.3g}'.format(abs(num)))
-
-def format_number(num):
-    num = safe_num(num)
-    sign = ''
-
-    metric = {'T': 1000000000000, 'B': 1000000000, 'M': 1000000, 'K': 1000, '': 1}
-
-    for index in metric:
-        num_check = num / metric[index]
-
-        if(num_check >= 1):
-            num = num_check
-            sign = index
-            break
-    if num == 0:
-        return ""
-    else:
-        return f"{str(num).rstrip('0').rstrip('.')} {sign}"
-
-def make_treemap(fig_tm):
-    sp500 = pd.read_csv('./data/marketcap.csv')
-    sp500_sectors = sp500.groupby(['Sector']).sum().reset_index()
-    sp500_sectors[['Text']] = sp500_sectors[['MarketCap']]
-    sp500_sectors[['MarketCap']] = 0
-    sp500_sectors['Symbol'] = sp500_sectors['Sector']
-    sp500_sectors['Name'] = sp500_sectors['Sector']
-    sp500_sectors.drop(columns=['Sector'], inplace=True)
-    sp500_sectors['Sector'] = "SP500"
-    sp500['Text'] = sp500['MarketCap']
-
-    sp500_tree = pd.concat([sp500_sectors, sp500.loc[sp500['MarketCap']>0,['Sector','MarketCap','Symbol','Name', 'Text']]]).reset_index(drop=True)
-    sp500_tree.rename(columns={'Sector':'Parent', 'Symbol':"Label"}, inplace=True)
-    sp500_tree['Text'] = sp500_tree['Text'].apply(format_number)
-    sp500_tree_ = pd.concat([pd.DataFrame([[0, "", "SP500","SP500",""]], columns=sp500_tree.columns),sp500_tree])
-
-    customdata = np.dstack((sp500_tree_[['Text']],sp500_tree_[['Name']]))
-
-    fig_tm.add_trace(go.Treemap(
-        labels = sp500_tree_['Label'],
-        parents = sp500_tree_['Parent'],
-        values=sp500_tree_['MarketCap'],
-        customdata=customdata,
-        hovertemplate="<b>%{customdata[0][1]}</b><br>%{customdata[0][0]} <extra></extra>",
-    ))
-    fig_tm.update_layout(
-        height=500,
-        width=500,
-        uniformtext=dict(minsize=12, mode='hide'),
-        treemapcolorway=[
-            COLORS["color-yellow"],
-            COLORS["color-accent"],
-            COLORS["color-orange"],
-            COLORS["color-lime"],
-            COLORS["color-primary"],
-            COLORS["color-green"],
-        ]
-    )
-    fig_tm.update_layout(margin = dict(t=10, l=0, r=0, b=0))
-
-
-
-
-    return fig_tm
-
-def make_bb_plots(fin_data_, fig_):
-
-    bb_cols = ['Close', 'volatility_bbm', 'volatility_bbh', 'volatility_bbl', ]
-    bb_colors = [COLORS['color-primary'], COLORS['color-red'], COLORS['color-yellow'], COLORS['color-yellow'], ]
-    plot_opts = [{'line_width': 1},
-                 {'line_width': 1},
-                 {'line_width': 1, 'line_dash':"dot"},
-                 {'line_width': 1,'line_dash':"dot"},
-                 ]
-    make_ta_plots(fin_data_, fig_, bb_cols, bb_colors, plot_opts)
-    
-    fig_ = tidy_plot(fig_)
-    fig_.update_traces(showlegend=True)
-    fig_.update_layout(legend=dict(
-        orientation="h",
-        yanchor="bottom",
-        y=1.02,
-        xanchor="left",
-        x=0
-    ))
-
-    return fig_
-
-def make_macd_plots(fin_data_, fig_):
-    macd_cols = ['trend_macd_diff', 'trend_macd', 'trend_macd_signal']
-    macd_colors = [ COLORS['color-lime'], COLORS['color-orange'], COLORS['color-yellow']]
-    plot_opts = [{'line_width': 1, 'line_dash':"dot"}, 
-                 {'line_width': 1, 'line_dash':"dot"}, 
-                 {'line_width': 1, }]
-    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
-
-    fig_.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor='rgba(255,255,255,.5)')
-    fig_ = tidy_plot(fig_)
-    fig_.update_traces(showlegend=True)
-    fig_.update_layout(legend=dict(
-        orientation="h",
-        yanchor="bottom",
-        y=1.02,
-        xanchor="left",
-        x=0
-    ))
-    return fig_
-
-def make_rsi_plots(fin_data_, fig_):
-    macd_cols = ['momentum_rsi',]
-    macd_colors = [ COLORS['color-orange'], ]
-    plot_opts = [{'line_width': 1}]
-    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
-    fig_ = tidy_plot(fig_)
-
-    return fig_
-
-
-def make_obv_plots(fin_data_, fig_):
-    macd_cols = ['volume_obv',]
-    macd_colors = [ COLORS['color-orange'], ]
-    plot_opts = [{'line_width': 1}]
-    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
-    fig_ = tidy_plot(fig_)
-
-    return fig_
-
-def make_vol_plots(fin_data_, fig_):
-    macd_cols = ['volatility_atr',]
-    macd_colors = [ COLORS['color-orange'], ]
-    plot_opts = [{'line_width': 1}]
-    make_ta_plots(fin_data_, fig_, macd_cols, macd_colors, plot_opts)
-    fig_ = tidy_plot(fig_)
-
-    return fig_
-def make_ta_plots(data_, fig_, cols_, colors_, plot_opts):
-
-    for i in range(len(cols_)):
-        fig_.add_trace(go.Scatter(x=data_.index, y=data_[cols_[i]],
-                    mode='lines',
-                    marker=dict(color=colors_[i]),
-                    name=str.upper(str.replace(cols_[i], "_", " ")),
-                    **plot_opts[i]
-                    ))
-    return fig_
 
 
 if __name__ == '__main__':
