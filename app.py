@@ -38,7 +38,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 ## Some constant vars
 ###############################################################
 
-date_interval = 365
+date_interval = 100
 END_DATE = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
 START_DATE = (datetime.today() + timedelta(days=-date_interval)).strftime('%Y-%m-%d')
 
@@ -50,7 +50,14 @@ PROD = True
 #PROD = False
 
 ENABLETWEETS = True
-TWEETSTOGET = 500
+#ENABLETWEETS = False
+TWEETSTOGET = 100
+SHOULDPRINTLOG = True
+
+def printlog(str):
+    if SHOULDPRINTLOG:
+        print(str)
+    return
 
 try:
     nltk.data.find('vader_lexicon')
@@ -114,6 +121,7 @@ def get_info_value(info, keyname):
     Check whether key exists in Ticker.info and only access if it does; 
     otherwise return empty string.
     """
+    printlog("get_info_value")
     infoValue = "" 
     if keyname in info.keys():
         infoValue = info[keyname] 
@@ -127,6 +135,7 @@ def prep_findata(df_):
         Close = ffill
         Open, High, Low = Close
     """
+    printlog("prep_findata")
     df_ = df_.reset_index().set_index('Date').asfreq('d')
     df_['DateCol'] = df_.index
 
@@ -148,6 +157,8 @@ def get_findata(sym, start_date, end_date):
     Returns Ticker.info if PROD==True, 
     otherwise return local sample info.json file
     """
+    printlog("get_findata")
+    print(start_date, end_date)
     if PROD == True:
         df_ = pdr.get_data_yahoo(sym, start=start_date, end=end_date)
         df_ = prep_findata(df_)
@@ -204,6 +215,7 @@ def shift_split_data(df_, target_col, fitsize=30):
     Shifts the "Y" column so that the X columns correspond
     to the next day Y as prediction.
     """
+    printlog("shift_split_data")
     df = df_.copy()
     ## Date_Y is the date being predicted
     ## The corresponding Date_X of the same row is the previous date
@@ -222,6 +234,7 @@ def make_prediction(df_fit):
     Use GridSearch so we can retrieve a MAPE score if necessary,
     but use previously obtained hyperparameters
     """
+    printlog("make_prediction")
     ## Split X and Y
     Y = df_fit['Y'][:-1]
     x_cols = [i for i in df_fit.columns.tolist() if i not in ['Date_X', 'Date_Y', 'Y'] ]
@@ -263,6 +276,7 @@ def tidy_plot(fig_):
     """
     Apply some default aesthetics to plots
     """
+    printlog("tidy_plot")
     fig_.update_traces(showlegend=False)
     fig_.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     fig_.update_yaxes(gridcolor=COLORS['color-darkGrey'])
@@ -277,6 +291,7 @@ def make_sparklines():
     """
     Render the 10 sparklines 
     """
+    printlog("make_sparklines")
     sp10_prices = get_sp10()
 
     fig_sub = make_subplots(rows=10, cols=1, 
@@ -311,6 +326,7 @@ def make_sparklines():
 
 
 def make_treemap(fig_tm):
+    printlog("make_treemap")
     sp500 = pd.read_csv('./data/marketcap.csv')
     sp500_sectors = sp500.groupby(['Sector']).sum().reset_index()
     sp500_sectors[['Text']] = sp500_sectors[['MarketCap']]
@@ -427,6 +443,7 @@ def make_vol_plots(fin_data_, fig_):
     return fig_
 
 def make_ta_plots(data_, fig_, cols_, colors_, plot_opts):
+    printlog("make_ta_plots")
 
     for i in range(len(cols_)):
         fig_.add_trace(go.Scatter(x=data_.index, y=data_[cols_[i]],
@@ -442,6 +459,7 @@ def get_sp10():
     Fetch the 30-day data for the top 10 assets by marketcap if PROD==True
     otherwise retrieve local sample data.
     """
+    printlog("get_sp10")
     sp10 = pd.read_csv('./data/marketcap.csv')
     sp10 = sp10.sort_values(by='MarketCap', ascending=False).reset_index(drop=True)
 
@@ -470,6 +488,7 @@ def get_tweets(sym):
     Fetch tweets from Twitter API if PROD==True, and ENABLETWEETS==True
     otherwise retrieve from local sample twitter file
     """
+    printlog("get_tweets")
     apiKey = ""
     apiSecret = ""
     accessToken = ""
@@ -506,6 +525,7 @@ def get_sentiment(s):
     """
     Return Sentiment scores
     """
+    printlog("get_sentiment")
     sia = SentimentIntensityAnalyzer()
     scores = sia.polarity_scores(s)
     neg = scores['neg']
@@ -518,6 +538,7 @@ def clean_text(txt):
     """
     Perform basic text processing
     """
+    printlog("clean_text")
     txt = re.sub(r"RT[\s]+", "", txt)
     txt = txt.replace("\n", " ")
     txt = re.sub(" +", " ", txt)
@@ -532,6 +553,7 @@ def get_tweets_sentiment(sym):
     Calculates the sentiment of each tweet retrieved. 
     Returns scores.
     """
+    printlog("get_tweets_sentiment")
 
     tweets = get_tweets(sym)
 
@@ -1012,6 +1034,7 @@ def getTimeSeriesPlot(ticker_symbol):
     pred_element = html.Span(pred, className=pred_direction)
     lastclose_element = html.Span('{:.3f}'.format(round(lastclose,3)))
         
+    printlog("--- END ---")
     
     return [ticker_symbol, fig_ts, fig_cs, fig_tm,
             fig_dcc, fig_dcc2, fig_dcc3, fig_dcc4, fig_dcc5, 
