@@ -27,7 +27,7 @@ Two things are required to run with the Sentiment Analysis feature.
 
 1. Twitter API tokens. a `sample_twitter.csv` file is provided, where the fields need to be filled with the corresponding Twitter keys. The file needs to be renamed to `twitter.csv`.
 
-2. In line 41 of `app.py` `ENABLETWEETS` must be set to True.
+2. In line 52 of `app.py` `ENABLETWEETS` must be set to True.
 
 
 ```sh
@@ -36,7 +36,7 @@ ENABLETWEETS = True
 
 ### Fetching asset prices live
 
-In line 38 of `app.py`, `PROD` must be set to `True`.
+In line 49 of `app.py`, `PROD` must be set to `True`.
 
 ```sh
 PROD = True
